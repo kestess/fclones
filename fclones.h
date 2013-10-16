@@ -1,6 +1,12 @@
 #ifndef __FCLONES__H__
 #define __FCLONES__H__
 
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <tuple>
+#include <vector>
+
 class Clone
 {
 
@@ -38,7 +44,7 @@ public:
 
 	friend bool operator< (const Clone& a, const Clone& b)
 	{
-		// will be sorted in descending order - default is ascending
+		// Will be sorted in descending order - default is ascending
 		return std::tie(b.diskSpaceSaved, b.fileSize) < std::tie(a.diskSpaceSaved, a.fileSize);
 	}
 
