@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/program_options.hpp>
 #include <exception>
 #include <fstream>
 #include <iomanip>
@@ -22,6 +23,17 @@ namespace globals {
   unsigned long long BLOCKS_CHECK_SIZE = 8192;
   unsigned long long BLOCKS_SECOND_CHECK_MIN_SIZE = 50 * 1024;
 }
+
+namespace command_line_options {
+
+  bool fastandloose = false;
+  unsigned long long minbytes = 0; 
+  bool numbernice = false;
+  std::string starting_directory;
+
+}
+
+namespace clo = command_line_options;
 
 namespace fs = boost::filesystem;
 
@@ -49,13 +61,13 @@ void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap)
   	for (auto dir : parent)
   	{
 
-  		std::cout << "Parent is " << dir << std::endl;
+  		//std::cout << "Parent is " << dir << std::endl;
 
   		// using the non-throwing directory_iterator and catching permission error (and probably others) while processing entries
   		std::for_each(boost::filesystem::directory_iterator(dir, ec), boost::filesystem::directory_iterator(), [&] (fs::path entry)
   		{
         if (ec != no_error) {
-          std::cout << "ERROR: Entry " << entry << " had a problem." << std::endl;
+          std::cerr << "ERROR: Entry " << entry << " resulted in error code: " << ec << "." << std::endl;
         }
 
         try {
@@ -63,19 +75,19 @@ void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap)
           {
             if (is_regular_file(entry))
             {
-              std::cout << " regular file " << entry << '\n';
-              std::cout << " regular file " << fs::file_size(entry) << '\n';
+              //std::cout << " regular file " << entry << '\n';
+              //std::cout << " regular file " << fs::file_size(entry) << '\n';
               lengthMap->insert(std::pair<uintmax_t, fs::path>(fs::file_size(entry), entry));
             }
             else if (is_directory(entry))
             {
-              std::cout << " directory " << entry << '\n';
+              //std::cout << " directory " << entry << '\n';
               dirs.push_back(entry);
-              std::cout << " vector size is " << dirs.size() << std::endl;
+              //std::cout << " vector size is " << dirs.size() << std::endl;
             } 
           }
         } catch (...) {
-          std::cout << "Bad" << std::endl;
+          std::cerr << "Directory entry " << ec << " had error code " << ec << " and an exception was caught. Continuing processing." << std::endl;
         }
       });	
     }
@@ -84,7 +96,7 @@ void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap)
 
 void addToBlockMap(uintmax_t fileSize, fs::path& file, std::shared_ptr<BlockMap> blockMap)
 {
-  std::cout << fileSize << "   "  << file << " IN THE Add" << std::endl;
+  //std::cout << fileSize << "   "  << file << " IN THE Add" << std::endl;
   std::ifstream f (fs::canonical(file).string(), std::ios::in | std::ios::binary);
   std::string checksum;
 
@@ -116,13 +128,12 @@ void addToBlockMap(uintmax_t fileSize, fs::path& file, std::shared_ptr<BlockMap>
     checksum = md5sum(block, total_len);
     delete[] block;
 
-    std::cout << "CHECKSUM " << checksum << std::endl;
+    //std::cout << "CHECKSUM " << checksum << std::endl;
 
     std::string lengthAndMd5 = std::to_string(fileSize) + "_" + checksum;
     blockMap->insert(std::pair<std::string, fs::path>(lengthAndMd5, file));
     f.close();
   }
-
 }
 
 void findDupesByLengthAndBlocks(std::shared_ptr<LengthMap> lengthMap, std::shared_ptr<BlockMap> blockMap)
@@ -133,21 +144,21 @@ void findDupesByLengthAndBlocks(std::shared_ptr<LengthMap> lengthMap, std::share
     // Same size files go into the same buckets and the bucket is shared with other lengths
     if ( lengthMap->bucket_size(bucket) < 2 ) continue;
 
-    std::cout << "bucket size is " << lengthMap->bucket_size(bucket) << std::endl;
+    //std::cout << "bucket size is " << lengthMap->bucket_size(bucket) << std::endl;
     //std::cout << "bucket #" << bucket << " contains:";
     for ( auto local_it = lengthMap->begin(bucket); local_it != lengthMap->end(bucket); ++local_it )
     {
-      std::cout << "NUM of  " << lengthMap->count(local_it->first) << std::endl;
+      //std::cout << "NUM of  " << lengthMap->count(local_it->first) << std::endl;
       if ( lengthMap->count(local_it->first) > 1 )
       {
-        std::cout << "This is what we're looking for " << local_it->first << "    " << local_it->second << std::endl;
+        //std::cout << "This is what we're looking for " << local_it->first << "    " << local_it->second << std::endl;
         addToBlockMap(local_it->first, local_it->second, blockMap);   
       }
-      std::cout << " " << local_it->first << ":" << local_it->second;
+      //std::cout << " " << local_it->first << ":" << local_it->second;
     }  
-    std::cout << std::endl;
+    //std::cout << std::endl;
 
-    std::cout << "Done with lmap" << std::endl;
+    //std::cout << "Done with lmap" << std::endl;
   }
 }
 
@@ -155,7 +166,7 @@ void findDupesByLengthAndBlocks(std::shared_ptr<LengthMap> lengthMap, std::share
 void addToMd5Map(fs::path& file, std::shared_ptr<Md5Map> md5Map)
 {
 
-  std::cout << file << " IN THE MD5" << std::endl;
+  //std::cout << file << " IN THE MD5" << std::endl;
   std::ifstream f (fs::canonical(file).string(), std::ios::in | std::ios::binary);
   std::string checksum;
   unsigned int size = fs::file_size(file);
@@ -167,7 +178,7 @@ void addToMd5Map(fs::path& file, std::shared_ptr<Md5Map> md5Map)
    raw_buffer->sgetn(block, size);
    checksum = md5sum(block, size);
    delete[] block;
-   std::cout << "FULL CHECKSUM " << checksum << std::endl;
+   //std::cout << "FULL CHECKSUM " << checksum << std::endl;
 
    md5Map->insert(std::pair<std::string, fs::path>(checksum, file));
    f.close();
@@ -199,7 +210,7 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
 
   for (auto it = md5Map->begin(); it != md5Map->end(); ++it)
   {
-    std::cout << "MD5 " << it->first << ":" << it->second << " has " << md5Map->count(it->first) << " entries." << std::endl;
+    //std::cout << "MD5 " << it->first << ":" << it->second << " has " << md5Map->count(it->first) << " entries." << std::endl;
 
     std::string hash = it->first;
     auto copies = md5Map->equal_range(hash);
@@ -215,7 +226,7 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
 
     if (alreadyDone == savedResults.end())
     {
-      std::cout << "First time for  " << hash << std::endl;   
+      //std::cout << "First time for  " << hash << std::endl;   
       unsigned long long filesize = fs::file_size(it->second);
       Clone clone(md5Map->count(it->first),
         filesize,
@@ -224,7 +235,7 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
       savedResults.insert(hash);
       clones->push_back(clone);
     } else {
-      std::cout << "Found hash " << hash << " already."  << std::endl;
+      //std::cout << "Found hash " << hash << " already."  << std::endl;
     }
 
   }
@@ -234,48 +245,120 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
 
 int main(int argc, char *argv[])
 {
+
+
+  namespace po = boost::program_options;
+  po::options_description desc("Options");
+  desc.add_options()
+    ("fastandloose,f","Minimal check of length and a few file blocks.")
+    ("help","Show this message")
+    ("isthisthingon,i","Print file currently being processed.")
+    ("minbytes,m", po::value<unsigned long long>(), "Minimum size of file to scan in bytes.")
+    ("numbernice,n", "Output in fixed format with units.")
+    ("directory,d", po::value<std::string>(), "Starting directory for scan. Could also be last unnamed parameter.");
+
+  po::positional_options_description pod;
+  pod.add("directory", 1);  
+  po::variables_map vm;
+  try
+  {
+    po::store(po::command_line_parser(argc, argv).options(desc).positional(pod).run(), vm);
+
+    if ( vm.count("help") )
+    {
+      std::cerr << "fclones - utility to find duplicate files based on contents." << std::endl
+                << desc << std::endl;
+      return 1;          
+    } 
+
+    if ( vm.count("isthisthingon") )
+    {
+      std::cerr << "verbose output has to be implemented" << std::endl;
+      return 1;          
+    }     
+
+    if ( vm.count("minbytes") )
+    {
+      clo::minbytes = vm["minbytes"].as<unsigned long long>(); 
+      std::cerr << "The smallest file size will be " << clo::minbytes << std::endl
+                << desc << std::endl;      
+    } 
+
+    if ( vm.count("numbernice") )
+    {
+      clo::numbernice = true;              
+    }     
+
+    if ( vm.count("fastandloose") )
+    {
+      clo::fastandloose = true;
+      std::cerr << "WARNING! Fast and loose option on. Only file size and first two block are"
+                << " guaranteed to be checked. May check other blocks if file is long enough."
+                << " Use at your own risk. Do not delete files based on this output." << std::endl;
+      return 1;          
+    } 
+
+    if ( vm.count("directory") )
+    {
+      clo::starting_directory = vm["directory"].as<std::string>();         
+    } 
+    else  // XXX remove after review
+    {
+      std::cerr << "Starting directory required." << std::endl;
+      return 1;
+    }  
+    po::notify(vm); 
+  }
+  catch(po::error &e)
+  {
+    std::cerr << "MY ERROR: " << e.what() << std::endl << std::endl;
+    std::cerr << desc << std::endl;
+    return 1;
+  }
+
   Directories dirs;
 
   auto lengthMap = std::make_shared<LengthMap>();
   auto blockMap  = std::make_shared<BlockMap>();
   auto md5Map    = std::make_shared<Md5Map>();
 
-  fs::path dir( fs::current_path() );
+  // XXX As soon as this is reviewed this will be changed.
+  // fs::path dir = (clo::starting_directory == "") ? fs::current_path() : clo::starting_directory;
+  fs::path dir(clo::starting_directory);
 
   if (is_directory(dir))
   {
-   std::cout << "Starting in the " << dir << "directory." << std::endl;
-   dirs.push_back(dir);	
- }
+    //std::cout << "Starting in the " << dir << "directory." << std::endl;
+    dirs.push_back(dir);	
+  }
 
- descend(dirs, lengthMap);
- std::cout << lengthMap->size() << std::endl;
+  descend(dirs, lengthMap);
+  //std::cout << lengthMap->size() << std::endl;
 
- findDupesByLengthAndBlocks(lengthMap, blockMap);
+  findDupesByLengthAndBlocks(lengthMap, blockMap);
+/*
+  for (auto it = blockMap->begin(); it != blockMap->end(); ++it)
+  {
+    std::cout << it->first << ":" << it->second << std::endl;
+  }
+*/
+  //std::cout << "Blockmap size is " << blockMap->size() << std::endl;
 
- for (auto it = blockMap->begin(); it != blockMap->end(); ++it)
- {
-  std::cout << it->first << ":" << it->second << std::endl;
-}
+  getAllMd5(blockMap, md5Map);
+/*
+  for (auto it = md5Map->begin(); it != md5Map->end(); ++it)
+  {
+    std::cout << "MD5 " << it->first << ":" << it->second << std::endl;
+  }
+*/
+  auto clones = createCloneList(md5Map);
+  std::sort(clones->begin(), clones->end());
 
-std::cout << "Blockmap size is " << blockMap->size() << std::endl;
+  Clone::printHeading();
+  for (auto clone = clones->begin(); clone != clones->end(); ++clone)
+  {
+    (clo::numbernice) ? clone->prettyPrint() : clone->print();
+  }
 
-getAllMd5(blockMap, md5Map);
-
-for (auto it = md5Map->begin(); it != md5Map->end(); ++it)
-{
-  std::cout << "MD5 " << it->first << ":" << it->second << std::endl;
-}
-
-auto clones = createCloneList(md5Map);
-std::sort(clones->begin(), clones->end());
-
-Clone::printHeading();
-for (auto clone = clones->begin(); clone != clones->end(); ++clone)
-{
-  clone->prettyPrint();
-}
-
-return 0;
-
+  return 0;
 }

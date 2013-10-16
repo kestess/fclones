@@ -60,7 +60,6 @@ std::tuple<std::string, unsigned long long> Clone::getFileSizeFormatting(unsigne
   }
 
   return std::make_tuple(units, divisor);
-
 }
 
 std::string Clone::formatFileSize(unsigned long long size)

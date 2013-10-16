@@ -1,5 +1,4 @@
 //Taken from http://rosettacode.org/wiki/MD5#C
-// XXX g++ -c md5.cpp -lc
 
 #include <cstdlib>
 #include <cstdio>

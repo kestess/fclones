@@ -3,7 +3,7 @@ RM=rm -f
 OBJS=fclones main.o fclones.o md5.o
 
 main: main.o fclones.o md5.o
-	$(CXX) -o fclones main.o fclones.o md5.o -L/usr/local/boost/lib -lboost_system -lboost_filesystem --std=c++11	
+	$(CXX) -o fclones main.o fclones.o md5.o -L/usr/local/boost/lib -lboost_system -lboost_filesystem -lboost_program_options --std=c++11	
 
 main.o: main.cpp main.h
 	$(CXX) -c main.cpp -I/usr/local/boost/include --std=c++11
