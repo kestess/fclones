@@ -62,8 +62,6 @@ void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap)
   	for (auto dir : parent)
   	{
 
-  		//std::cout << "Parent is " << dir << std::endl;
-
   		// using the non-throwing directory_iterator and catching permission error (and probably others) while processing entries
   		std::for_each(boost::filesystem::directory_iterator(dir, ec), boost::filesystem::directory_iterator(), [&] (fs::path entry)
   		{
@@ -76,17 +74,12 @@ void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap)
           {
             if (is_regular_file(entry))
             {
-              //std::cout << " regular file " << entry << '\n';
-              //std::cout << " regular file " << fs::file_size(entry) << '\n';
-
               if (clo::isthisthingon) std::cout << "AL " << entry << std::endl;
               lengthMap->insert(std::pair<uintmax_t, fs::path>(fs::file_size(entry), entry));
             }
             else if (is_directory(entry))
             {
-              //std::cout << " directory " << entry << '\n';
               dirs.push_back(entry);
-              //std::cout << " vector size is " << dirs.size() << std::endl;
             } 
           }
         } catch (...) {
@@ -102,91 +95,29 @@ void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap)
   {
 
     try {
-  //std::cout << fileSize << "   "  << file << " IN THE Add" << std::endl;
       std::ifstream f (fs::canonical(file).string(), std::ios::in | std::ios::binary);
-/*
-
-      if (//fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/parts/r/partition_alter1_1_2_myisam.result" ||
-          //fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/sp.result" ||
-          //fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/type_newdecimal.result" ||
-          //fs::canonical(file).string() == "/usr/local/boost_old/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp" ||
-          fs::canonical(file).string() == "/usr/local/boost_old/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp" ||
-          fs::canonical(file).string() == "/usr/local/boost/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp" ||
-          fs::canonical(file).string() == "/usr/local/boost_old/include/boost/mpl/vector/aux_/preprocessed/no_ctps/vector30.hpp" ||
-          fs::canonical(file).string() == "/usr/local/boost/include/boost/mpl/vector/aux_/preprocessed/no_ctps/vector30.hpp" ||
-          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/ctype_ucs.result" ||
-          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/subselect.result" ||
-          fs::canonical(file).string() == "/usr/local/boost_old/include/boost/preprocessor/list/detail/fold_left.hpp" ||
-          fs::canonical(file).string() == "/usr/local/boost/include/boost/preprocessor/list/detail/fold_left.hpp" ||
-          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/parts/r/partition_syntax_innodb.result" ||
-          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/innodb_func_view.result" ||
-          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/myisam_func_view.result" ||
-          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/memory_func_view.result" ||
-          fs::canonical(file).string() == "/usr/local/boost_old/include/boost/numeric/ublas/vector_expression.hpp" ||
-          fs::canonical(file).string() == "/usr/local/boost/include/boost/numeric/ublas/vector_expression.hpp" ||
-          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/engines/funcs/r/jp_comment_column.result" ||
-          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/docs/ChangeLog")
-      {
-          std::cout << "Caught the file" << std::endl;
-          return;
-
-      }
-*/
-
-//f_charbig = 'just inserted'
-
       std::string checksum;
-
-      // std::cout << "FILE being processed. " << file << std::endl;   // XXX
-
       char *block = nullptr;
 
       if (f.is_open())
       {
         int len = std::min(static_cast<unsigned long long>(fileSize), globals::BLOCKS_CHECK_SIZE);
-        int total_len = len;
-
-        if ( static_cast<unsigned long long>(fileSize) > globals::BLOCKS_SECOND_CHECK_MIN_SIZE )
-        {
-      //  Two more blocks - read at one time with Linux
-          total_len = 2 * globals::BLOCKS_CHECK_SIZE;
-        }
-
         std::streambuf *raw_blocks = f.rdbuf();
-        block = new char[total_len];
-        // memset(block, '\0', total_len);
+
+        block = new char[len];
         raw_blocks->sgetn(block, len);
 
-    // WARNING!!! binary files will have nulls - must pass length without using strlen or anything
-    // else that terminates with a NULL
+        // WARNING!!! binary files will have nulls - must pass length without using strlen or anything
+        // else that terminates with a NULL
 
-        if ( static_cast<unsigned long long>(fileSize) > globals::BLOCKS_SECOND_CHECK_MIN_SIZE )
-        {
-          //raw_blocks->pubseekpos(globals::BLOCKS_SECOND_CHECK_MIN_SIZE - globals::BLOCKS_CHECK_SIZE);
-          raw_blocks->pubseekpos(static_cast<unsigned int>(globals::BLOCKS_SECOND_CHECK_MIN_SIZE - globals::BLOCKS_CHECK_SIZE));
-          raw_blocks->sgetn(block + len, globals::BLOCKS_CHECK_SIZE);
-        }
-
-        checksum = md5sum(block, total_len);
-
-/*
-        std::cout << "block is " << block << std::endl;
-        std::cout << "filesize was " << fileSize << std::endl;
-        std::cout << "len is " << len << std::endl;
-        std::cout << "total_len is " << total_len << std::endl;
-        std::cout << "checksum " << checksum << std::endl;
-*/
+        checksum = md5sum(block, len);
         delete[] block;
-//        std::cout << "After delete" << std::endl;
 
         std::string lengthAndMd5 = std::to_string(fileSize) + "_" + checksum;
         if (clo::isthisthingon) std::cout << "AB " << file << std::endl;
-//        std::cout << "Before blockmap" << std::endl;
         blockMap->insert(std::pair<std::string, fs::path>(lengthAndMd5, file));
-//        std::cout << "after blockmap" << std::endl;
 
         f.close();
-//        std::cout << "after file close" << std::endl;
       }
 
     } catch (...) {
@@ -202,29 +133,20 @@ void findDupesByLengthAndBlocks(std::shared_ptr<LengthMap> lengthMap, std::share
     // Same size files go into the same buckets and the bucket is shared with other lengths
     if ( lengthMap->bucket_size(bucket) < 2 ) continue;
 
-    //std::cout << "bucket size is " << lengthMap->bucket_size(bucket) << std::endl;
-    //std::cout << "bucket #" << bucket << " contains:";
     for ( auto local_it = lengthMap->begin(bucket); local_it != lengthMap->end(bucket); ++local_it )
     {
-      //std::cout << "NUM of  " << lengthMap->count(local_it->first) << std::endl;
       if ( lengthMap->count(local_it->first) > 1 )
       {
-        //std::cout << "This is what we're looking for " << local_it->first << "    " << local_it->second << std::endl;
         addToBlockMap(local_it->first, local_it->second, blockMap);   
       }
-      //std::cout << " " << local_it->first << ":" << local_it->second;
     }  
-    //std::cout << std::endl;
-
-    //std::cout << "Done with lmap" << std::endl;
   }
 }
 
-// Now we get the md5 of the whole file
+// Now for the md5 of the whole file
 void addToMd5Map(fs::path& file, std::shared_ptr<Md5Map> md5Map)
 {
   try {
-    // std::cout << file << " IN THE MD5" << std::endl;
     std::ifstream f (fs::canonical(file).string(), std::ios::in | std::ios::binary);
     std::string checksum;
     unsigned int size = fs::file_size(file);
@@ -236,7 +158,6 @@ void addToMd5Map(fs::path& file, std::shared_ptr<Md5Map> md5Map)
      raw_buffer->sgetn(block, size);
      checksum = md5sum(block, size);
      delete[] block;
-   //std::cout << "FULL CHECKSUM " << checksum << std::endl;
 
      if (clo::isthisthingon) std::cout << "AH " << file << std::endl;
      md5Map->insert(std::pair<std::string, fs::path>(checksum, file));
@@ -271,7 +192,6 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
 
   for (auto it = md5Map->begin(); it != md5Map->end(); ++it)
   {
-    //std::cout << "MD5 " << it->first << ":" << it->second << " has " << md5Map->count(it->first) << " entries." << std::endl;
 
     std::string hash = it->first;
 
@@ -400,7 +320,6 @@ int main(int argc, char *argv[])
     return 1;    
   }
 
-  //std::cout << "Starting in the " << dir << "directory." << std::endl;
   dirs.push_back(dir);  
   descend(dirs, lengthMap); // creates the length Hash of all the files.
 

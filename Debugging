@@ -80,6 +80,43 @@ Zerofluid:fclones john$ ls -l garbage
 
 This ended up being a scope issue that resulted in too little memory being allocated.
 
+======================================================
+
+real 14m15.257s
+user 0m42.699s
+sys  0m15.143s
+
+41320 Files
+
+In [1]: 14 * 60 + 15.257 / 41320
+Out[1]: 840.0003692400775
+
+840 files per second - this sucks. 8192 bytes that are MD5'ed for comparison.
+
+
+==================
+Oops - debugging is on - checking with 256 first to see how much it matters.
+
+It is actually taking longer.
+
+Zerofluid:fclones john$ time ./fclones /usr/local 
+^C 
+I stopped 
+
+real 15m44.927s
+user 0m34.632s
+sys  0m13.207s
+=================
+
+Checked with 4096 blocks
+
+real 16m24.982s
+user 0m23.462s
+sys  0m17.381s
+
+Apparently my guess that 8192 was transferred anyway was correct.
+
+
 
 
 
