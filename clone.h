@@ -1,5 +1,5 @@
-#ifndef __FCLONES__H__
-#define __FCLONES__H__
+#ifndef __CLONE__H__
+#define __CLONE__H__
 
 #include <iomanip>
 #include <iostream>

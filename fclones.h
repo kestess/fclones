@@ -1,5 +1,7 @@
-#ifndef __MAIN__H__
-#define __MAIN__H__
+#ifndef __FCLONES__H__
+#define __FCLONES__H__
+
+#include "clone.h"
 
 #include <algorithm>
 #include <boost/filesystem.hpp>
@@ -34,22 +36,20 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map);
 
 std::string md5sum(char *s, int len);
 
-// globals with default values
+// huge disappointment that I had to declare extern to avoid linker errors.
 namespace globals {
-  unsigned long long BLOCKS_CHECK_SIZE = 4096;
-  unsigned long long BLOCKS_SECOND_CHECK_MIN_SIZE = 50 * 1024;
-  unsigned int BUCKET_INCREMENT = 500;
+  extern unsigned long long BLOCKS_CHECK_SIZE;
+  extern unsigned long long BLOCKS_SECOND_CHECK_MIN_SIZE;
+  extern unsigned int BUCKET_INCREMENT;
 }
 
 namespace command_line_options {
-
-  bool arewethereyet  = false;
-  bool fastandloose = false;
-  bool isthisthingon = false;
-  unsigned long long minbytes = 4096; 
-  bool numbernice = false;
-  std::string starting_directory;
-
+  extern bool arewethereyet;
+  extern bool fastandloose;
+  extern bool isthisthingon;
+  extern unsigned long long minbytes; 
+  extern bool numbernice;
+  extern std::string starting_directory;
 }
 
 namespace clo = command_line_options;

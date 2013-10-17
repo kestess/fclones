@@ -1,4 +1,4 @@
-#include "fclones.h"
+#include "clone.h"
 
 Clone::Clone(unsigned int numberOfClones,
  unsigned long long fileSize,
