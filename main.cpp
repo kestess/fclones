@@ -27,6 +27,7 @@ namespace globals {
 namespace command_line_options {
 
   bool fastandloose = false;
+  bool isthisthingon = false;
   unsigned long long minbytes = 0; 
   bool numbernice = false;
   std::string starting_directory;
@@ -77,6 +78,8 @@ void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap)
             {
               //std::cout << " regular file " << entry << '\n';
               //std::cout << " regular file " << fs::file_size(entry) << '\n';
+
+              if (clo::isthisthingon) std::cout << "AL " << entry << std::endl;
               lengthMap->insert(std::pair<uintmax_t, fs::path>(fs::file_size(entry), entry));
             }
             else if (is_directory(entry))
@@ -89,52 +92,58 @@ void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap)
         } catch (...) {
           std::cerr << "Directory entry " << ec << " had error code " << ec << " and an exception was caught. Continuing processing." << std::endl;
         }
+
       });	
     }
     if (dirs.size() > 0) descend(dirs, lengthMap);
   }
 
-void addToBlockMap(uintmax_t fileSize, fs::path& file, std::shared_ptr<BlockMap> blockMap)
-{
-  //std::cout << fileSize << "   "  << file << " IN THE Add" << std::endl;
-  std::ifstream f (fs::canonical(file).string(), std::ios::in | std::ios::binary);
-  std::string checksum;
-
-  if (f.is_open())
+  void addToBlockMap(uintmax_t fileSize, fs::path& file, std::shared_ptr<BlockMap> blockMap)
   {
-    int len = std::min(static_cast<unsigned long long>(fileSize), globals::BLOCKS_CHECK_SIZE);
-    int total_len = len;
 
-    if ( static_cast<unsigned long long>(fileSize) > globals::BLOCKS_SECOND_CHECK_MIN_SIZE )
-    {
+    try {
+  //std::cout << fileSize << "   "  << file << " IN THE Add" << std::endl;
+      std::ifstream f (fs::canonical(file).string(), std::ios::in | std::ios::binary);
+      std::string checksum;
+
+      if (f.is_open())
+      {
+        int len = std::min(static_cast<unsigned long long>(fileSize), globals::BLOCKS_CHECK_SIZE);
+        int total_len = len;
+
+        if ( static_cast<unsigned long long>(fileSize) > globals::BLOCKS_SECOND_CHECK_MIN_SIZE )
+        {
       // first 8K (two blocks - read at one time with Linux)
-      int total_len = 2 * globals::BLOCKS_CHECK_SIZE;
-    }
+          int total_len = 2 * globals::BLOCKS_CHECK_SIZE;
+        }
 
-
-    std::streambuf *raw_blocks = f.rdbuf();
-    char *block = new char[total_len];
-    raw_blocks->sgetn(block, len);
+        std::streambuf *raw_blocks = f.rdbuf();
+        char *block = new char[total_len];
+        raw_blocks->sgetn(block, len);
 
     // WARNING!!! binary files will have nulls - must pass length without using strlen or anything
     // else that terminates with a NULL
 
-    if ( static_cast<unsigned long long>(fileSize) > globals::BLOCKS_SECOND_CHECK_MIN_SIZE )
-    {
-      raw_blocks->pubseekpos(globals::BLOCKS_SECOND_CHECK_MIN_SIZE - globals::BLOCKS_CHECK_SIZE);
-      raw_blocks->sgetn(block + len, globals::BLOCKS_CHECK_SIZE);
-    }
+        if ( static_cast<unsigned long long>(fileSize) > globals::BLOCKS_SECOND_CHECK_MIN_SIZE )
+        {
+          raw_blocks->pubseekpos(globals::BLOCKS_SECOND_CHECK_MIN_SIZE - globals::BLOCKS_CHECK_SIZE);
+          raw_blocks->sgetn(block + len, globals::BLOCKS_CHECK_SIZE);
+        }
 
-    checksum = md5sum(block, total_len);
-    delete[] block;
+        checksum = md5sum(block, total_len);
+        delete[] block;
 
     //std::cout << "CHECKSUM " << checksum << std::endl;
 
-    std::string lengthAndMd5 = std::to_string(fileSize) + "_" + checksum;
-    blockMap->insert(std::pair<std::string, fs::path>(lengthAndMd5, file));
-    f.close();
+        std::string lengthAndMd5 = std::to_string(fileSize) + "_" + checksum;
+        if (clo::isthisthingon) std::cout << "AB " << file << std::endl;
+        blockMap->insert(std::pair<std::string, fs::path>(lengthAndMd5, file));
+        f.close();
+      }
+    } catch (...) {
+      std::cerr << "Exception caught in addToBlockMap." << std::endl;
+    }
   }
-}
 
 void findDupesByLengthAndBlocks(std::shared_ptr<LengthMap> lengthMap, std::shared_ptr<BlockMap> blockMap)
 {
@@ -165,25 +174,28 @@ void findDupesByLengthAndBlocks(std::shared_ptr<LengthMap> lengthMap, std::share
 // Now we get the md5 of the whole file
 void addToMd5Map(fs::path& file, std::shared_ptr<Md5Map> md5Map)
 {
-
+  try {
   //std::cout << file << " IN THE MD5" << std::endl;
-  std::ifstream f (fs::canonical(file).string(), std::ios::in | std::ios::binary);
-  std::string checksum;
-  unsigned int size = fs::file_size(file);
+    std::ifstream f (fs::canonical(file).string(), std::ios::in | std::ios::binary);
+    std::string checksum;
+    unsigned int size = fs::file_size(file);
 
-  if (f.is_open())
-  {
-   std::streambuf* raw_buffer = f.rdbuf();
-   char* block = new char[size];
-   raw_buffer->sgetn(block, size);
-   checksum = md5sum(block, size);
-   delete[] block;
+    if (f.is_open())
+    {
+     std::streambuf* raw_buffer = f.rdbuf();
+     char* block = new char[size];
+     raw_buffer->sgetn(block, size);
+     checksum = md5sum(block, size);
+     delete[] block;
    //std::cout << "FULL CHECKSUM " << checksum << std::endl;
 
-   md5Map->insert(std::pair<std::string, fs::path>(checksum, file));
-   f.close();
- }
-
+     if (clo::isthisthingon) std::cout << "AH " << file << std::endl;
+     md5Map->insert(std::pair<std::string, fs::path>(checksum, file));
+     f.close();
+    }
+  } catch (...) {
+    std::cerr << "Exception caught in addToMd5Map." << std::endl;
+  }
 }
 
 void getAllMd5(std::shared_ptr<BlockMap> blockMap, std::shared_ptr<Md5Map> md5Map)
@@ -213,31 +225,38 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
     //std::cout << "MD5 " << it->first << ":" << it->second << " has " << md5Map->count(it->first) << " entries." << std::endl;
 
     std::string hash = it->first;
+
+    if ( md5Map->count(hash) < 2 ) continue;
+
     auto copies = md5Map->equal_range(hash);
+
     std::string names;
 
-    for ( auto local_it = copies.first; local_it != copies.second; ++local_it )
-    {
-      names += fs::canonical(local_it->second).string() + ";";
+    try {
+      for ( auto local_it = copies.first; local_it != copies.second; ++local_it )
+      {
+        names += fs::canonical(local_it->second).string() + ";";
+      }
+      if (names.length() > 0) names.pop_back(); // remove trailing semicolon
+
+      auto alreadyDone = savedResults.find(hash);
+
+      if (alreadyDone == savedResults.end())
+      {
+        //std::cout << "First time for  " << hash << std::endl;   
+        unsigned long long filesize = fs::file_size(it->second);
+        Clone clone(md5Map->count(it->first),
+          filesize,
+          names);
+
+        savedResults.insert(hash);
+        clones->push_back(clone);
+      } else {
+        //std::cout << "Found hash " << hash << " already."  << std::endl;
+      }
+    } catch (...) {
+      std::cerr << "Exception caught in createCloneList." << std::endl;
     }
-    if (names.length() > 0) names.pop_back(); // remove trailing semicolon
-
-    auto alreadyDone = savedResults.find(hash);
-
-    if (alreadyDone == savedResults.end())
-    {
-      //std::cout << "First time for  " << hash << std::endl;   
-      unsigned long long filesize = fs::file_size(it->second);
-      Clone clone(md5Map->count(it->first),
-        filesize,
-        names);
-
-      savedResults.insert(hash);
-      clones->push_back(clone);
-    } else {
-      //std::cout << "Found hash " << hash << " already."  << std::endl;
-    }
-
   }
   return clones;
 }
@@ -273,8 +292,7 @@ int main(int argc, char *argv[])
 
     if ( vm.count("isthisthingon") )
     {
-      std::cerr << "verbose output has to be implemented" << std::endl;
-      return 1;          
+       clo::isthisthingon = true;  
     }     
 
     if ( vm.count("minbytes") )
@@ -334,10 +352,14 @@ int main(int argc, char *argv[])
 
   //std::cout << "Starting in the " << dir << "directory." << std::endl;
   dirs.push_back(dir);  
-  descend(dirs, lengthMap);
-  //std::cout << lengthMap->size() << std::endl;
+  descend(dirs, lengthMap); // creates the length Hash of all the files.
+
+  if (clo::isthisthingon) std::cout << "HASH 1 of 3: Length hash has " << lengthMap->size() << " entries." << std::endl;
 
   findDupesByLengthAndBlocks(lengthMap, blockMap);
+
+  if (clo::isthisthingon) std::cout << "HASH 2 of 3: Block hash has " << blockMap->size() << " entries." << std::endl;
+
 /*
   for (auto it = blockMap->begin(); it != blockMap->end(); ++it)
   {
@@ -347,6 +369,9 @@ int main(int argc, char *argv[])
   //std::cout << "Blockmap size is " << blockMap->size() << std::endl;
 
   getAllMd5(blockMap, md5Map);
+
+  if (clo::isthisthingon) std::cout << "HASH 3 of 3: MD5 hash has " << md5Map->size() << " entries." << std::endl;
+
 /*
   for (auto it = md5Map->begin(); it != md5Map->end(); ++it)
   {

@@ -71,3 +71,19 @@ Challenging options...
 - HYDRA. This problem may involve a lot of asynchronous I/O and the disk subsystem may be a RAID-type system that can do a lot of concurrent I/O using many 'disk heads'. Use threads, or async I/O or other technique in order to have an implementation that exploits the potential performance of such a storage subsystem.
 
 ===============================================================================
+
+Performance on my home directory which is a mish-mash of directories from previous computers with many permissions problems:
+
+A simple "time find . | wc -l" counts 387711 files with the following times:
+real    0m58.388s
+user    0m0.691s
+sys     0m3.447s
+
+20469  fclones      5.9       01:25.22 1    0    17   371+   336M+  2756K  337M+  353M+  2714M+ 20469 14909 stuck    501  608953+   95
+20469  fclones      5.7       01:34.70 1    0    17   397+   362M+  2756K  363M+  379M+  2740M+ 20469 14909 stuck    501  615618+   95
+20469  fclones      2.6       02:21.09 1    0    17   439    560M+  2756K  562M+  575M   2936M  20469 14909 stuck    501  666353+   95
+20469  fclones      7.6       03:32.54 1    0    17   529    1157M+ 2756K  1158M+ 1169M  3530M  20469 14909 stuck    501  819109+   95
+20469  fclones      3.6       03:38.98 1    0    17   542    1244M+ 2756K  1250M+ 1259M  3620M  20469 14909 stuck    501  842555+   95
+20469  fclones      5.1       03:51.81 1    0    17   568    1424M+ 2756K  1429M+ 1439M  3800M  20469 14909 stuck    501  888526+   95
+
+
