@@ -326,12 +326,14 @@ int main(int argc, char *argv[])
   // fs::path dir = (clo::starting_directory == "") ? fs::current_path() : clo::starting_directory;
   fs::path dir(clo::starting_directory);
 
-  if (is_directory(dir))
+  if (!is_directory(dir))
   {
-    //std::cout << "Starting in the " << dir << "directory." << std::endl;
-    dirs.push_back(dir);	
+    std::cerr << dir << " is not a directory. Aborting..." << std::endl;
+    return 1;    
   }
 
+  //std::cout << "Starting in the " << dir << "directory." << std::endl;
+  dirs.push_back(dir);  
   descend(dirs, lengthMap);
   //std::cout << lengthMap->size() << std::endl;
 
