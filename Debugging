@@ -1,0 +1,88 @@
+Out of 41320, 20 cause the program to hang.
+
+Zerofluid:r john$ find /usr/local | wc -l
+find: /usr/local/mysql-5.5.28-osx10.6-x86_64/data/performance_schema: Permission denied
+   41320
+
+
+Files resulting in memory allocation errors:
+
+ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/parts/r/partition_alter1_1_2_myisam.result" 
+ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/sp.result" 
+ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/type_newdecimal.result" 
+ls -l "/usr/local/boost_old/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp" 
+ls -l "/usr/local/boost_old/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp" 
+ls -l "/usr/local/boost/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp" 
+ls -l "/usr/local/boost_old/include/boost/mpl/vector/aux_/preprocessed/no_ctps/vector30.hpp" 
+ls -l "/usr/local/boost/include/boost/mpl/vector/aux_/preprocessed/no_ctps/vector30.hpp" 
+ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/ctype_ucs.result" 
+ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/subselect.result" 
+ls -l "/usr/local/boost_old/include/boost/preprocessor/list/detail/fold_left.hpp" 
+ls -l "/usr/local/boost/include/boost/preprocessor/list/detail/fold_left.hpp" 
+ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/parts/r/partition_syntax_innodb.result" 
+ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/innodb_func_view.result" 
+ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/myisam_func_view.result" 
+ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/memory_func_view.result" 
+ls -l "/usr/local/boost_old/include/boost/numeric/ublas/vector_expression.hpp" 
+ls -l "/usr/local/boost/include/boost/numeric/ublas/vector_expression.hpp" 
+ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/engines/funcs/r/jp_comment_column.result" 
+ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/docs/ChangeLog"
+
+Weird that they are roughly multiples of 60000 - maybe it means something.
+
+Zerofluid:r john$ ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/parts/r/partition_alter1_1_2_myisam.result" 
+-rw-r--r--  1 root  wheel  311251 Aug 29  2012 /usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/parts/r/partition_alter1_1_2_myisam.result
+Zerofluid:r john$ ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/sp.result" 
+-rw-r--r--  1 root  wheel  186797 Aug 29  2012 /usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/sp.result
+Zerofluid:r john$ ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/type_newdecimal.result" 
+-rw-r--r--  1 root  wheel  62363 Aug 29  2012 /usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/type_newdecimal.result
+Zerofluid:r john$ ls -l "/usr/local/boost_old/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp" 
+-rw-r--r--@ 1 john  staff  62625 Apr 28 17:16 /usr/local/boost_old/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp
+Zerofluid:r john$ ls -l "/usr/local/boost_old/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp" 
+-rw-r--r--@ 1 john  staff  62625 Apr 28 17:16 /usr/local/boost_old/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp
+Zerofluid:r john$ ls -l "/usr/local/boost/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp" 
+-rw-r--r--@ 1 root  wheel  62625 Oct 14 10:11 /usr/local/boost/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp
+Zerofluid:r john$ ls -l "/usr/local/boost_old/include/boost/mpl/vector/aux_/preprocessed/no_ctps/vector30.hpp" 
+-rw-r--r--@ 1 john  staff  62745 Apr 28 17:16 /usr/local/boost_old/include/boost/mpl/vector/aux_/preprocessed/no_ctps/vector30.hpp
+Zerofluid:r john$ ls -l "/usr/local/boost/include/boost/mpl/vector/aux_/preprocessed/no_ctps/vector30.hpp" 
+-rw-r--r--@ 1 root  wheel  62745 Oct 14 10:11 /usr/local/boost/include/boost/mpl/vector/aux_/preprocessed/no_ctps/vector30.hpp
+Zerofluid:r john$ ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/ctype_ucs.result" 
+-rw-r--r--  1 root  wheel  124996 Aug 29  2012 /usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/ctype_ucs.result
+Zerofluid:r john$ ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/subselect.result" 
+-rw-r--r--  1 root  wheel  187269 Aug 29  2012 /usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/subselect.result
+Zerofluid:r john$ ls -l "/usr/local/boost_old/include/boost/preprocessor/list/detail/fold_left.hpp" 
+-rw-r--r--@ 1 john  staff  62809 Apr 28 17:09 /usr/local/boost_old/include/boost/preprocessor/list/detail/fold_left.hpp
+Zerofluid:r john$ ls -l "/usr/local/boost/include/boost/preprocessor/list/detail/fold_left.hpp" 
+-rw-r--r--@ 1 root  wheel  62809 Oct 14 10:10 /usr/local/boost/include/boost/preprocessor/list/detail/fold_left.hpp
+Zerofluid:r john$ ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/parts/r/partition_syntax_innodb.result" 
+-rw-r--r--  1 root  wheel  62822 Aug 29  2012 /usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/parts/r/partition_syntax_innodb.result
+Zerofluid:r john$ ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/innodb_func_view.result" 
+-rw-r--r--  1 root  wheel  311852 Aug 29  2012 /usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/innodb_func_view.result
+Zerofluid:r john$ ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/myisam_func_view.result"
+-rw-r--r--  1 root  wheel  311903 Aug 29  2012 /usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/myisam_func_view.result
+Zerofluid:r john$ ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/memory_func_view.result" 
+-rw-r--r--  1 root  wheel  311903 Aug 29  2012 /usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/memory_func_view.result
+Zerofluid:r john$ ls -l "/usr/local/boost_old/include/boost/numeric/ublas/vector_expression.hpp"
+-rw-r--r--@ 1 john  staff  63027 Apr 28 17:09 /usr/local/boost_old/include/boost/numeric/ublas/vector_expression.hpp
+Zerofluid:r john$ ls -l "/usr/local/boost/include/boost/numeric/ublas/vector_expression.hpp" 
+-rw-r--r--@ 1 root  wheel  63027 Oct 14 10:02 /usr/local/boost/include/boost/numeric/ublas/vector_expression.hpp
+Zerofluid:r john$ ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/engines/funcs/r/jp_comment_column.result" 
+-rw-r--r--  1 root  wheel  249803 Aug 29  2012 /usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/engines/funcs/r/jp_comment_column.result
+Zerofluid:r john$ ls -l "/usr/local/mysql-5.5.28-osx10.6-x86_64/docs/ChangeLog"
+-rw-r--r--  1 root  wheel  63154 Aug 29  2012 /usr/local/mysql-5.5.28-osx10.6-x86_64/docs/ChangeLog
+
+My maximum block size should be 8192 * 2 = 16384
+
+Block for:
+"/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/parts/r/partition_alter1_1_2_myisam.result"
+Zerofluid:fclones john$ ls -l garbage 
+-rw-r--r--  1 john  staff  16389 Oct 17 01:31 garbage
+
+This ended up being a scope issue that resulted in too little memory being allocated.
+
+
+
+
+
+
+

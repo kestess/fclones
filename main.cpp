@@ -104,7 +104,42 @@ void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap)
     try {
   //std::cout << fileSize << "   "  << file << " IN THE Add" << std::endl;
       std::ifstream f (fs::canonical(file).string(), std::ios::in | std::ios::binary);
+/*
+
+      if (//fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/parts/r/partition_alter1_1_2_myisam.result" ||
+          //fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/sp.result" ||
+          //fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/type_newdecimal.result" ||
+          //fs::canonical(file).string() == "/usr/local/boost_old/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp" ||
+          fs::canonical(file).string() == "/usr/local/boost_old/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp" ||
+          fs::canonical(file).string() == "/usr/local/boost/include/boost/spirit/home/support/char_encoding/unicode/uppercase_table.hpp" ||
+          fs::canonical(file).string() == "/usr/local/boost_old/include/boost/mpl/vector/aux_/preprocessed/no_ctps/vector30.hpp" ||
+          fs::canonical(file).string() == "/usr/local/boost/include/boost/mpl/vector/aux_/preprocessed/no_ctps/vector30.hpp" ||
+          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/ctype_ucs.result" ||
+          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/r/subselect.result" ||
+          fs::canonical(file).string() == "/usr/local/boost_old/include/boost/preprocessor/list/detail/fold_left.hpp" ||
+          fs::canonical(file).string() == "/usr/local/boost/include/boost/preprocessor/list/detail/fold_left.hpp" ||
+          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/parts/r/partition_syntax_innodb.result" ||
+          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/innodb_func_view.result" ||
+          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/myisam_func_view.result" ||
+          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/funcs_1/r/memory_func_view.result" ||
+          fs::canonical(file).string() == "/usr/local/boost_old/include/boost/numeric/ublas/vector_expression.hpp" ||
+          fs::canonical(file).string() == "/usr/local/boost/include/boost/numeric/ublas/vector_expression.hpp" ||
+          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/mysql-test/suite/engines/funcs/r/jp_comment_column.result" ||
+          fs::canonical(file).string() == "/usr/local/mysql-5.5.28-osx10.6-x86_64/docs/ChangeLog")
+      {
+          std::cout << "Caught the file" << std::endl;
+          return;
+
+      }
+*/
+
+//f_charbig = 'just inserted'
+
       std::string checksum;
+
+      // std::cout << "FILE being processed. " << file << std::endl;   // XXX
+
+      char *block = nullptr;
 
       if (f.is_open())
       {
@@ -113,12 +148,13 @@ void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap)
 
         if ( static_cast<unsigned long long>(fileSize) > globals::BLOCKS_SECOND_CHECK_MIN_SIZE )
         {
-      // first 8K (two blocks - read at one time with Linux)
-          int total_len = 2 * globals::BLOCKS_CHECK_SIZE;
+      //  Two more blocks - read at one time with Linux
+          total_len = 2 * globals::BLOCKS_CHECK_SIZE;
         }
 
         std::streambuf *raw_blocks = f.rdbuf();
-        char *block = new char[total_len];
+        block = new char[total_len];
+        // memset(block, '\0', total_len);
         raw_blocks->sgetn(block, len);
 
     // WARNING!!! binary files will have nulls - must pass length without using strlen or anything
@@ -126,20 +162,33 @@ void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap)
 
         if ( static_cast<unsigned long long>(fileSize) > globals::BLOCKS_SECOND_CHECK_MIN_SIZE )
         {
-          raw_blocks->pubseekpos(globals::BLOCKS_SECOND_CHECK_MIN_SIZE - globals::BLOCKS_CHECK_SIZE);
+          //raw_blocks->pubseekpos(globals::BLOCKS_SECOND_CHECK_MIN_SIZE - globals::BLOCKS_CHECK_SIZE);
+          raw_blocks->pubseekpos(static_cast<unsigned int>(globals::BLOCKS_SECOND_CHECK_MIN_SIZE - globals::BLOCKS_CHECK_SIZE));
           raw_blocks->sgetn(block + len, globals::BLOCKS_CHECK_SIZE);
         }
 
         checksum = md5sum(block, total_len);
-        delete[] block;
 
-    //std::cout << "CHECKSUM " << checksum << std::endl;
+/*
+        std::cout << "block is " << block << std::endl;
+        std::cout << "filesize was " << fileSize << std::endl;
+        std::cout << "len is " << len << std::endl;
+        std::cout << "total_len is " << total_len << std::endl;
+        std::cout << "checksum " << checksum << std::endl;
+*/
+        delete[] block;
+//        std::cout << "After delete" << std::endl;
 
         std::string lengthAndMd5 = std::to_string(fileSize) + "_" + checksum;
         if (clo::isthisthingon) std::cout << "AB " << file << std::endl;
+//        std::cout << "Before blockmap" << std::endl;
         blockMap->insert(std::pair<std::string, fs::path>(lengthAndMd5, file));
+//        std::cout << "after blockmap" << std::endl;
+
         f.close();
+//        std::cout << "after file close" << std::endl;
       }
+
     } catch (...) {
       std::cerr << "Exception caught in addToBlockMap." << std::endl;
     }
@@ -175,7 +224,7 @@ void findDupesByLengthAndBlocks(std::shared_ptr<LengthMap> lengthMap, std::share
 void addToMd5Map(fs::path& file, std::shared_ptr<Md5Map> md5Map)
 {
   try {
-  //std::cout << file << " IN THE MD5" << std::endl;
+    // std::cout << file << " IN THE MD5" << std::endl;
     std::ifstream f (fs::canonical(file).string(), std::ios::in | std::ios::binary);
     std::string checksum;
     unsigned int size = fs::file_size(file);
@@ -233,6 +282,7 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
     std::string names;
 
     try {
+
       for ( auto local_it = copies.first; local_it != copies.second; ++local_it )
       {
         names += fs::canonical(local_it->second).string() + ";";
