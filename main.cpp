@@ -1,23 +1,9 @@
-#include <algorithm>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/program_options.hpp>
-#include <exception>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <iterator>
-#include <memory>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+
 
 #include "fclones.h"
 #include "main.h"
 
-
+/*
 // globals with default values
 namespace globals {
   unsigned long long BLOCKS_CHECK_SIZE = 4096;
@@ -37,15 +23,7 @@ namespace command_line_options {
 }
 
 namespace clo = command_line_options;
-
-namespace fs = boost::filesystem;
-
-typedef std::vector<fs::path> Directories;
-typedef std::unordered_multimap<uintmax_t, fs::path> LengthMap;
-typedef std::unordered_multimap<std::string, fs::path> BlockMap;
-typedef std::unordered_multimap<std::string, fs::path> Md5Map;
-typedef std::unordered_set<std::string> HashResults;
-
+*/
 // Add directories to working directory list
 void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap)
 {
@@ -128,7 +106,7 @@ void addToBlockMap(uintmax_t fileSize, fs::path& file, std::shared_ptr<BlockMap>
   }
 }
 
-void findDupesByLengthAndBlocks(std::shared_ptr<LengthMap> lengthMap, std::shared_ptr<BlockMap> blockMap)
+void findDupesByLength(std::shared_ptr<LengthMap> lengthMap, std::shared_ptr<BlockMap> blockMap)
 {
   unsigned int bucket = 0;
   unsigned int bucket_last = 0;
@@ -137,7 +115,7 @@ void findDupesByLengthAndBlocks(std::shared_ptr<LengthMap> lengthMap, std::share
   for (bucket = 0; bucket < bucket_len; ++bucket) 
   {
 
-    if (clo::arewethereyet && bucket != bucket_last && (bucket % clo::BUCKET_INCREMENT == 0) )
+    if (clo::arewethereyet && bucket != bucket_last && (bucket % globals::BUCKET_INCREMENT == 0) )
     {
       std::cout << "Stage 2 of 3 is " <<  std::setprecision(0) << std::fixed
                 << static_cast<float>(bucket)/bucket_len * 100 << "% done." << std::endl;
@@ -182,7 +160,7 @@ void addToMd5Map(fs::path& file, std::shared_ptr<Md5Map> md5Map)
   }
 }
 
-void getAllMd5(std::shared_ptr<BlockMap> blockMap, std::shared_ptr<Md5Map> md5Map)
+void findDupesByLengthAndBlocks(std::shared_ptr<BlockMap> blockMap, std::shared_ptr<Md5Map> md5Map)
 {
   unsigned int bucket = 0;
   unsigned int bucket_last = 0;
@@ -191,7 +169,7 @@ void getAllMd5(std::shared_ptr<BlockMap> blockMap, std::shared_ptr<Md5Map> md5Ma
   for (bucket = 0; bucket < bucket_len; ++bucket)
   {
 
-    if (clo::arewethereyet && bucket != bucket_last && (bucket % clo::BUCKET_INCREMENT == 0) )
+    if (clo::arewethereyet && bucket != bucket_last && (bucket % globals::BUCKET_INCREMENT == 0) )
     {
         std::cout << "Stage 3 of 3 is " <<  std::setprecision(0) << std::fixed
                   << static_cast<float>(bucket)/bucket_len * 100 << "% done." << std::endl;
@@ -262,12 +240,12 @@ int main(int argc, char *argv[])
   namespace po = boost::program_options;
   po::options_description desc("Options");
   desc.add_options()
-    ("arewethereyet,a", "Provide progress indicators.")
-    ("fastandloose,f", "Minimal check of length and a few file blocks.")
+    ("arewethereyet,a", "Provide progress indicators.") // AREWETHEREYET 
+    ("fastandloose,f", "Minimal check of length and a few file blocks.") // FASTANDLOOSE
     ("help", "Show this message")
-    ("isthisthingon,i", "Print file currently being processed.")
+    ("isthisthingon,i", "Print file currently being processed.") // ISTHISTHINGON
     ("minbytes,m", po::value<unsigned long long>(), "Minimum size of file to scan in bytes.")
-    ("numbernice,n", "Output in fixed format with units.")
+    ("numbernice,n", "Output in fixed format with units.") // NUMBERNICE
     ("directory,d", po::value<std::string>(), "Starting directory for scan. Could also be last unnamed parameter.");
 
   po::positional_options_description pod;
@@ -308,8 +286,8 @@ int main(int argc, char *argv[])
     {
       clo::fastandloose = true;
       std::cerr << "WARNING! Fast and loose option on. Only file size and first two block are"
-                << " guaranteed to be checked."
-                << " Use at your own risk. Do not delete files based on this output." << std::endl;       
+                << " guaranteed to be compared. Use at your own risk. Do not delete files based on"
+                << " this output." << std::endl;       
     } 
 
     if ( vm.count("directory") )
@@ -351,7 +329,7 @@ int main(int argc, char *argv[])
 
   if (clo::isthisthingon) std::cout << "HASH 1 of 3: Length hash has " << lengthMap->size() << " entries." << std::endl;
 
-  findDupesByLengthAndBlocks(lengthMap, blockMap);
+  findDupesByLength(lengthMap, blockMap);
 
   if (clo::isthisthingon) std::cout << "HASH 2 of 3: Block hash has " << blockMap->size() << " entries." << std::endl;
 
@@ -364,7 +342,7 @@ int main(int argc, char *argv[])
   //std::cout << "Blockmap size is " << blockMap->size() << std::endl;
 
   if ( !clo::fastandloose ) {
-    getAllMd5(blockMap, md5Map);
+    findDupesByLengthAndBlocks(blockMap, md5Map);
     if (clo::isthisthingon) std::cout << "HASH 3 of 3: MD5 hash has " << md5Map->size() << " entries." << std::endl;
   }
 

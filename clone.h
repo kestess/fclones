@@ -27,6 +27,7 @@ public:
     }
 
     // Reports: Disk space saved, number of duplicates (the first isn't a duplicate), file size, name list
+    // ESCAPISM - file names were double-quoted by default due to the use of boost::filesystem
 	void print()
 	{
 		std::cout << diskSpaceSaved << "," << numberOfClones - 1 << "," << fileSize << "," << nameList << std::endl;
