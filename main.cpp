@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     }  
 
     po::notify(vm);
-     
+
   }
   catch(po::error &e)
   {
@@ -78,7 +78,8 @@ int main(int argc, char *argv[])
 
   Directories dirs;
 
-  auto lengthMap = std::make_shared<LengthMap>();
+  // auto lengthMap = std::make_shared<LengthMap>();
+  LengthMap *lengthMap = new LengthMap();
   auto blockMap  = std::make_shared<BlockMap>();
   auto md5Map    = std::make_shared<Md5Map>();
 
@@ -98,6 +99,7 @@ int main(int argc, char *argv[])
   if (clo::isthisthingon) std::cout << "HASH 1 of 3: Length hash has " << lengthMap->size() << " entries." << std::endl;
 
   findDupesByLength(lengthMap, blockMap);
+  delete lengthMap;
 
   if (clo::isthisthingon) std::cout << "HASH 2 of 3: Block hash has " << blockMap->size() << " entries." << std::endl;
 

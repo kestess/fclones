@@ -29,12 +29,13 @@ typedef std::unordered_set<std::string> HashResults;
 
 // Descends recursively - breadth-first so a depth limiter might easily be
 // added later. Adds all files and their lengths to the lengthMap.
-void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap);
+// void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap);
+void descend(Directories &parent, LengthMap *lengthMap);
 void addToBlockMap(uintmax_t fileSize, fs::path& file, std::shared_ptr<BlockMap> blockMap);
 
 // Finds the files with the same lengths in lengthMap and gets the md5 of the
 // first two blocks and saves to blockMap.
-void findDupesByLength(std::shared_ptr<LengthMap> lengthMap, std::shared_ptr<BlockMap> blockMap);
+void findDupesByLength(LengthMap *lengthMap, std::shared_ptr<BlockMap> blockMap);
 
 void addToMd5Map(fs::path& file, std::shared_ptr<Md5Map> md5Map);
 

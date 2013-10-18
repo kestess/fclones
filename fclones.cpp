@@ -12,7 +12,7 @@ bool command_line_options::numbernice = false;
 std::string command_line_options::starting_directory;
 
 // Add directories to working directory list
-void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap)
+void descend(Directories &parent, LengthMap *lengthMap)
 {
   // XXX not currently used
   static int counter = 0;
@@ -93,7 +93,7 @@ void addToBlockMap(uintmax_t fileSize, fs::path& file, std::shared_ptr<BlockMap>
   }
 }
 
-void findDupesByLength(std::shared_ptr<LengthMap> lengthMap, std::shared_ptr<BlockMap> blockMap)
+void findDupesByLength(LengthMap *lengthMap, std::shared_ptr<BlockMap> blockMap)
 {
   unsigned int bucket = 0;
   unsigned int bucket_last = 0;
