@@ -1,4 +1,6 @@
-//Taken from http://rosettacode.org/wiki/MD5#C
+// Taken from http://rosettacode.org/wiki/MD5#C
+// All credit goes to original authors.
+// If this is ever a bottleneck there some assembly instructions on some platforms.
 
 #include <cstdlib>
 #include <cstdio>

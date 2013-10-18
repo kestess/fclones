@@ -1,8 +1,8 @@
 #include "clone.h"
 
 Clone::Clone(unsigned int numberOfClones,
- unsigned long long fileSize,
- std::string nameList)
+             unsigned long long fileSize,
+             std::string nameList)
 {
   this->diskSpaceSaved = (numberOfClones - 1) * fileSize;
   this->numberOfClones = numberOfClones;

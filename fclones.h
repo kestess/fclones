@@ -36,7 +36,6 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map);
 
 std::string md5sum(char *s, int len);
 
-// huge disappointment that I had to declare extern to avoid linker errors.
 namespace globals {
   extern unsigned long long BLOCKS_CHECK_SIZE;
   extern unsigned long long BLOCKS_SECOND_CHECK_MIN_SIZE;

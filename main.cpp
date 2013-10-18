@@ -65,7 +65,9 @@ int main(int argc, char *argv[])
       std::cerr << "Starting directory required." << std::endl;
       return 1;
     }  
-    po::notify(vm); 
+
+    po::notify(vm);
+     
   }
   catch(po::error &e)
   {
