@@ -27,11 +27,22 @@ typedef std::unordered_multimap<std::string, fs::path> BlockMap;
 typedef std::unordered_multimap<std::string, fs::path> Md5Map;
 typedef std::unordered_set<std::string> HashResults;
 
+// Descends recursively - breadth-first so a depth limiter might easily be
+// added later. Adds all files and their lengths to the lengthMap.
 void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap);
 void addToBlockMap(uintmax_t fileSize, fs::path& file, std::shared_ptr<BlockMap> blockMap);
+
+// Finds the files with the same lengths in lengthMap and gets the md5 of the
+// first two blocks and saves to blockMap.
 void findDupesByLength(std::shared_ptr<LengthMap> lengthMap, std::shared_ptr<BlockMap> blockMap);
+
 void addToMd5Map(fs::path& file, std::shared_ptr<Md5Map> md5Map);
+
+// Finds the files with the same lengths and md5 of first two blocks and
+// determines md5 of entire file and saves to md5Map.
 void findDupesByLengthAndBlocks(std::shared_ptr<BlockMap> blockMap, std::shared_ptr<Md5Map> md5Map);
+
+// Determines the md5 hashes that are not unique and adds to them to the CloneList
 std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map);
 
 std::string md5sum(char *s, int len);
