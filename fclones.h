@@ -29,7 +29,6 @@ typedef std::unordered_set<std::string> HashResults;
 
 // Descends recursively - breadth-first so a depth limiter might easily be
 // added later. Adds all files and their lengths to the lengthMap.
-// void descend(Directories &parent, std::shared_ptr<LengthMap> lengthMap);
 void descend(Directories &parent, LengthMap *lengthMap);
 void addToBlockMap(uintmax_t fileSize, fs::path& file, std::shared_ptr<BlockMap> blockMap);
 

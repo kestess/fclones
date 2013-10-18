@@ -1,5 +1,8 @@
 #include "fclones.h"
 
+#include <chrono>
+#include <ctime>
+
 int main(int argc, char *argv[])
 {
 
@@ -8,7 +11,7 @@ int main(int argc, char *argv[])
   desc.add_options()
     ("arewethereyet,a", "Provide progress indicators.") // AREWETHEREYET 
     ("fastandloose,f", "Minimal check of length and a few file blocks.") // FASTANDLOOSE
-    ("help", "Show this message")
+    ("help,h", "Show this message")
     ("isthisthingon,i", "Print file currently being processed.") // ISTHISTHINGON
     ("minbytes,m", po::value<unsigned long long>(), "Minimum size of file to scan in bytes.")
     ("numbernice,n", "Output in fixed format with units.") // NUMBERNICE
@@ -94,14 +97,25 @@ int main(int argc, char *argv[])
   }
 
   dirs.push_back(dir);  
+
+  std::chrono::time_point<std::chrono::system_clock> start, end;
+  start = std::chrono::system_clock::now();
   descend(dirs, lengthMap); // creates the length Hash of all the files.
+  end = std::chrono::system_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end - start;
 
-  if (clo::isthisthingon) std::cout << "HASH 1 of 3: Length hash has " << lengthMap->size() << " entries." << std::endl;
+  if (clo::isthisthingon) std::cout << "Stage 1 of 3 (L): Inserted " << lengthMap->size()
+                                    << " entries in " << elapsed_seconds.count() << " seconds." << std::endl;
 
+  start = std::chrono::system_clock::now();
   findDupesByLength(lengthMap, blockMap);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end - start;
+
   delete lengthMap;
 
-  if (clo::isthisthingon) std::cout << "HASH 2 of 3: Block hash has " << blockMap->size() << " entries." << std::endl;
+  if (clo::isthisthingon) std::cout << "Stage 2 of 3 (B): Inserted " << blockMap->size()
+                                    << " entries in " << elapsed_seconds.count() << " seconds." << std::endl;
 
 /*
   for (auto bucket = blockMap->begin(); bucket != blockMap->end(); ++bucket)
@@ -112,8 +126,12 @@ int main(int argc, char *argv[])
   //std::cout << "Blockmap size is " << blockMap->size() << std::endl;
 
   if ( !clo::fastandloose ) {
+    start = std::chrono::system_clock::now();
     findDupesByLengthAndBlocks(blockMap, md5Map);
-    if (clo::isthisthingon) std::cout << "HASH 3 of 3: MD5 hash has " << md5Map->size() << " entries." << std::endl;
+    end = std::chrono::system_clock::now();
+    elapsed_seconds = end - start;
+    if (clo::isthisthingon) std::cout << "Stage 3 of 3 (H): Inserted " << md5Map->size()
+                                      << " entries in " << elapsed_seconds.count() << " seconds." << std::endl;
   }
 
 /*
