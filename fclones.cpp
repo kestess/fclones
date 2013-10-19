@@ -37,9 +37,9 @@ void descend(Directories &parent, LengthMap *lengthMap)
       }
 
       try {
-        if (exists(entry))
+        if (exists(entry) && !fs::is_symlink(entry) ) // SYMLINKY
         {
-          if ( fs::is_regular_file(entry) )
+          if ( fs::is_regular_file(entry) && !fs::is_symlink(entry) )  
           {
             unsigned long long size = fs::file_size(entry);
             if (size >= clo::minbytes) {
@@ -47,7 +47,7 @@ void descend(Directories &parent, LengthMap *lengthMap)
               lengthMap->insert(std::pair<uintmax_t, fs::path>(fs::file_size(entry), entry));
             }  
           }
-          else if ( fs::is_directory(entry) && !fs::is_symlink(entry) )
+          else if ( fs::is_directory(entry) )
           {
             dirs.push_back(entry);
           } 
