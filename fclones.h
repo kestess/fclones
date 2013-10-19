@@ -59,6 +59,7 @@ namespace command_line_options {
   extern bool isthisthingon;
   extern unsigned long long minbytes; 
   extern bool numbernice;
+  extern bool perftest;
   extern std::string starting_directory;
 }
 

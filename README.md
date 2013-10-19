@@ -32,7 +32,23 @@ I met the specification listed in minimal capabilities. Some of the moderate opt
 FUNCTEST - there is a functional test - "make test" and then run "fclones_test" - I never used Boost Test before this, but it appears I met the intent.
 MINBYTES - done. Note: the parameters do not take "=" signs, so the format would be like "--minbytes 8192"
 FASTANDLOOSE - done. Used as an intermediate filtering step when not used as the final step.
-PERFTEST - not done. gprof didn't appear to work on my Mac. I tried using Instruments and it was pretty and colorful, but I didn't see the tables I'm used to seeing.
+PERFTEST - somewhat - gprof didn't appear to work on my Mac. I tried using Instruments and it was pretty and colorful, but I didn't see the tables I'm used to seeing. Added timing mechanism to baseline performance. Current output in uniprocessor form with (-p):
+
+    Total space saved after deleting duplicate files over 4096 long: 550.8 MB
+    Total number of files that are copies (excluding one considered an original): 5524
+    Stage 1 completed in 0.45 seconds. Inserted 18083 entries.
+    Stage 2 completed in 1.39 seconds. Inserted 13503 entries.
+    Stage 3 completed in 12.12 seconds. Inserted 10709 entries.
+
+    Note: I have a boost folder and a boost_old folder that provide many copies. Also, my mysql installation dir is symlinked and provides an excellent 
+          excuse to fix the symlink problem. UPDATE - fixed half the symlink problem - the dirs. New times (excludes the mysql symlink)
+
+    Total space saved after deleting duplicate files over 4096 long: 90.4 MB
+    Total number of files that are copies (excluding one considered an original): 3061
+    Stage 1 completed in 0.38 seconds. Inserted 15568 entries.
+    Stage 2 completed in 1.00 seconds. Inserted 9656 entries.
+    Stage 3 completed in 2.10 seconds. Inserted 5865 entries.
+
 ESCAPISM - done by default thanks to boost::filesystem output.
 NUMBERNICE - done.
 ISTHISTHINGON - done with AL (add length), AB (add block) or AH (add hash) designators to indicate which stage the program is in. 

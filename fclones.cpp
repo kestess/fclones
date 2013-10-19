@@ -9,6 +9,7 @@ bool command_line_options::fastandloose = false;
 bool command_line_options::isthisthingon = false;
 unsigned long long command_line_options::minbytes = 4096; 
 bool command_line_options::numbernice = false;
+bool command_line_options::perftest = false;
 std::string command_line_options::starting_directory;
 
 // Add directories to working directory list
@@ -38,7 +39,7 @@ void descend(Directories &parent, LengthMap *lengthMap)
       try {
         if (exists(entry))
         {
-          if (is_regular_file(entry))
+          if ( fs::is_regular_file(entry) )
           {
             unsigned long long size = fs::file_size(entry);
             if (size >= clo::minbytes) {
@@ -46,7 +47,7 @@ void descend(Directories &parent, LengthMap *lengthMap)
               lengthMap->insert(std::pair<uintmax_t, fs::path>(fs::file_size(entry), entry));
             }  
           }
-          else if (is_directory(entry))
+          else if ( fs::is_directory(entry) && !fs::is_symlink(entry) )
           {
             dirs.push_back(entry);
           } 

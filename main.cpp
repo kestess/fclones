@@ -10,12 +10,13 @@ int main(int argc, char *argv[])
   po::options_description desc("Options");
   desc.add_options()
     ("arewethereyet,a", "Provide progress indicators.") // AREWETHEREYET 
+    ("directory,d", po::value<std::string>(), "Starting directory for scan. Could also be last unnamed parameter.")
     ("fastandloose,f", "Minimal check of length and a few file blocks.") // FASTANDLOOSE
     ("help,h", "Show this message")
     ("isthisthingon,i", "Print file currently being processed.") // ISTHISTHINGON
     ("minbytes,m", po::value<unsigned long long>(), "Minimum size of file to scan in bytes.")
     ("numbernice,n", "Output in fixed format with units.") // NUMBERNICE
-    ("directory,d", po::value<std::string>(), "Starting directory for scan. Could also be last unnamed parameter.");
+    ("perftest,p", "Output elapsed time for each stage."); // PERFTEST
 
   po::positional_options_description pod;
   pod.add("directory", 1);  
@@ -34,7 +35,17 @@ int main(int argc, char *argv[])
     if ( vm.count("arewethereyet") )
     {
        clo::arewethereyet = true;  
+    }
+
+    if ( vm.count("directory") )
+    {
+      clo::starting_directory = vm["directory"].as<std::string>();         
     } 
+    else  // XXX remove after review
+    {
+      std::cerr << "Starting directory required." << std::endl;
+      return 1;
+    }  
 
     if ( vm.count("isthisthingon") )
     {
@@ -59,15 +70,10 @@ int main(int argc, char *argv[])
                 << " this output." << std::endl;       
     } 
 
-    if ( vm.count("directory") )
+    if ( vm.count("perftest") )
     {
-      clo::starting_directory = vm["directory"].as<std::string>();         
-    } 
-    else  // XXX remove after review
-    {
-      std::cerr << "Starting directory required." << std::endl;
-      return 1;
-    }  
+      clo::perftest = true;              
+    }     
 
     po::notify(vm);
 
@@ -102,20 +108,21 @@ int main(int argc, char *argv[])
   start = std::chrono::system_clock::now();
   descend(dirs, lengthMap); // creates the length Hash of all the files.
   end = std::chrono::system_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
+  std::chrono::duration<double> elapsed_seconds_1 = end - start;
+  unsigned int lengthMapSize = lengthMap->size();
 
-  if (clo::isthisthingon) std::cout << "Stage 1 of 3 (L): Inserted " << lengthMap->size()
-                                    << " entries in " << elapsed_seconds.count() << " seconds." << std::endl;
+  if ( clo::isthisthingon || clo::perftest ) std::cout << "Stage 1 of 3 (L): Inserted "
+    << lengthMapSize << " entries in " << elapsed_seconds_1.count() << " seconds." << std::endl;
 
   start = std::chrono::system_clock::now();
   findDupesByLength(lengthMap, blockMap);
   end = std::chrono::system_clock::now();
-  elapsed_seconds = end - start;
+  std::chrono::duration<double> elapsed_seconds_2 = end - start;  
 
   delete lengthMap;
 
-  if (clo::isthisthingon) std::cout << "Stage 2 of 3 (B): Inserted " << blockMap->size()
-                                    << " entries in " << elapsed_seconds.count() << " seconds." << std::endl;
+  if ( clo::isthisthingon || clo::perftest  ) std::cout << "Stage 2 of 3 (B): Inserted "
+    << blockMap->size() << " entries in " << elapsed_seconds_2.count() << " seconds." << std::endl;
 
 /*
   for (auto bucket = blockMap->begin(); bucket != blockMap->end(); ++bucket)
@@ -125,13 +132,14 @@ int main(int argc, char *argv[])
 */
   //std::cout << "Blockmap size is " << blockMap->size() << std::endl;
 
+  std::chrono::duration<double> elapsed_seconds_3;
   if ( !clo::fastandloose ) {
     start = std::chrono::system_clock::now();
     findDupesByLengthAndBlocks(blockMap, md5Map);
     end = std::chrono::system_clock::now();
-    elapsed_seconds = end - start;
-    if (clo::isthisthingon) std::cout << "Stage 3 of 3 (H): Inserted " << md5Map->size()
-                                      << " entries in " << elapsed_seconds.count() << " seconds." << std::endl;
+    elapsed_seconds_3 = end - start;
+    if ( clo::isthisthingon || clo::perftest ) std::cout << "Stage 3 of 3 (H): Inserted " 
+      << md5Map->size() << " entries in " << elapsed_seconds_3.count() << " seconds." << std::endl;
   }
 
 /*
@@ -144,15 +152,38 @@ int main(int argc, char *argv[])
   auto clones = createCloneList(( clo::fastandloose ) ? blockMap : md5Map);
   std::sort(clones->begin(), clones->end());
   unsigned long long savedSpace = 0;
+  unsigned int numOfFilesToDelete = 0;
 
   Clone::printHeading();
-  for (auto clone = clones->begin(); clone != clones->end(); ++clone)
+  for ( auto clone = clones->begin(); clone != clones->end(); ++clone )
   {
     (clo::numbernice) ? clone->prettyPrint() : clone->print();
     savedSpace += clone->diskSpaceSaved;
+    numOfFilesToDelete += (clone->numberOfClones - 1);
   }
   std::cout << "Total space saved after deleting duplicate files over " << clo::minbytes 
             << " long: " << Clone::formatFileSize(savedSpace) << std::endl;
+  if ( clo::perftest )
+  {          
+    std::cout << "Total number of files that are copies (excluding one considered an original): " 
+              << numOfFilesToDelete << std::endl; 
+  }       
+  if ( clo::perftest )
+  {
+    std::cout << "Stage 1 completed in " << std::setprecision(2) << std::fixed
+              << elapsed_seconds_1.count() << " seconds. Inserted " << lengthMapSize << " entries." << std::endl;
+    std::cout << "Stage 2 completed in " << std::setprecision(2) << std::fixed 
+              << elapsed_seconds_2.count() << " seconds. Inserted " << blockMap->size() << " entries." << std::endl;
+    if ( !clo::fastandloose )
+    {
+      std::cout << "Stage 3 completed in " << std::setprecision(2) << std::fixed
+                << elapsed_seconds_3.count() << " seconds. Inserted " << md5Map->size() << " entries." << std::endl;
+    }
+    else
+    {
+      std::cout << "Stage 3 is not run in fast and loose mode." << std::endl;
+    }
+  }        
 
   return 0;
 }
