@@ -194,17 +194,17 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
 
     try {
 
-      for ( auto it = copies.first; it != copies.second; ++it )
-      {
-        names += fs::canonical(it->second).string() + ";";
-      }
-      if (names.length() > 0) names.pop_back(); // remove trailing semicolon
-
       auto alreadyDone = savedResults.find(hash);
 
       // hash has not been found already
       if (alreadyDone == savedResults.end())
       {
+        for ( auto it = copies.first; it != copies.second; ++it )
+        {
+          names += fs::canonical(it->second).string() + ";";
+        }
+        if (names.length() > 0) names.pop_back(); // remove trailing semicolon
+
         //std::cout << "First time for  " << hash << std::endl;   
         unsigned long long filesize = fs::file_size(bucket->second);
         Clone clone(md5Map->count(bucket->first), filesize, names);

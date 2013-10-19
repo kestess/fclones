@@ -49,6 +49,16 @@ PERFTEST - somewhat - gprof didn't appear to work on my Mac. I tried using Instr
     Stage 2 completed in 1.00 seconds. Inserted 9656 entries.
     Stage 3 completed in 2.10 seconds. Inserted 5865 entries.
 
+    UPDATE - removed all symlinks:
+
+    Total space saved after deleting duplicate files over 4096 long: 69.7 MB
+    Total number of files that are copies (excluding one considered an original): 3053
+    Stage 1 completed in 0.48 seconds. Inserted 15554 entries.
+    Stage 2 completed in 27.86 seconds. Inserted 9639 entries.
+    Stage 3 completed in 1.97 seconds. Inserted 5853 entries.
+
+    
+
 ESCAPISM - done by default thanks to boost::filesystem output.
 NUMBERNICE - done.
 ISTHISTHINGON - done with AL (add length), AB (add block) or AH (add hash) designators to indicate which stage the program is in. 
