@@ -204,15 +204,17 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
           names += fs::canonical(it->second).string() + ";";
         }
         if (names.length() > 0) names.pop_back(); // remove trailing semicolon
-
         //std::cout << "First time for  " << hash << std::endl;   
         unsigned long long filesize = fs::file_size(bucket->second);
         Clone clone(md5Map->count(bucket->first), filesize, names);
         savedResults.insert(hash);
         clones->push_back(clone);
-      } else {
+      }
+      else
+      {
         //std::cout << "Found hash " << hash << " already."  << std::endl;
       }
+
     } catch (...) {
       std::cerr << "Exception caught in createCloneList." << std::endl;
     }
