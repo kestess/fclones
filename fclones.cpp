@@ -1,7 +1,6 @@
 #include "fclones.h"
 
-unsigned long long globals::BLOCKS_CHECK_SIZE = 4096;
-unsigned long long globals::BLOCKS_SECOND_CHECK_MIN_SIZE = 50 * 1024;
+unsigned long long globals::BLOCKS_CHECK_SIZE = 8192;
 unsigned int globals::BUCKET_INCREMENT = 500;
 
 bool command_line_options::arewethereyet  = false;
@@ -124,27 +123,38 @@ void findDupesByLength(LengthMap *lengthMap, std::shared_ptr<BlockMap> blockMap)
 }
 
 // Now for the md5 of the whole file
-void addToMd5Map(fs::path& file, std::shared_ptr<Md5Map> md5Map)
+void addToMd5Map(std::string lenMd5, fs::path& file, std::shared_ptr<Md5Map> md5Map)
 {
   try {
     std::ifstream f (fs::canonical(file).string(), std::ios::in | std::ios::binary);
     std::string checksum;
     unsigned int size = fs::file_size(file);
 
-    if (f.is_open())
-    {
-     std::streambuf* raw_buffer = f.rdbuf();
-     char* block = new char[size];
-     raw_buffer->sgetn(block, size);
-     checksum = md5sum(block, size);
-     delete[] block;
+    if ( size > globals::BLOCKS_CHECK_SIZE )
+    { 
+      // get full MD5 of file 
+      if (f.is_open())
+      {
+       std::streambuf* raw_buffer = f.rdbuf();
+       char* block = new char[size];
+       raw_buffer->sgetn(block, size);
+       checksum = md5sum(block, size);
+       delete[] block;
 
-     if (clo::isthisthingon) std::cout << "AH " << file << std::endl;
-     md5Map->insert(std::pair<std::string, fs::path>(checksum, file));
-     f.close();
+       if (clo::isthisthingon) std::cout << "AH " << file << std::endl;
+       md5Map->insert(std::pair<std::string, fs::path>(checksum, file));
+       f.close();
+      }
+    }  
+    else
+    {
+      std::string md5 = lenMd5.substr( lenMd5.find_first_of("_") + 1 );
+      if (clo::isthisthingon) std::cout << "AH " << file << std::endl;
+      md5Map->insert(std::pair<std::string, fs::path>(md5, file));
     }
+  
   } catch (...) {
-    std::cerr << "Exception caught in addToMd5Map." << std::endl;
+      std::cerr << "Exception caught in addToMd5Map." << std::endl;
   }
 }
 
@@ -169,7 +179,7 @@ void findDupesByLengthAndBlocks(std::shared_ptr<BlockMap> blockMap, std::shared_
     {
       if ( blockMap->count(it->first) > 1 )
       {
-        addToMd5Map(it->second, md5Map);
+        addToMd5Map(it->first, it->second, md5Map);
       }
     }
 
@@ -190,8 +200,7 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
     if ( md5Map->count(hash) < 2 ) continue;
     // gather all files with same hash
     auto copies = md5Map->equal_range(hash); 
-    std::string names;
-
+    
     try {
 
       auto alreadyDone = savedResults.find(hash);
@@ -199,6 +208,7 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
       // hash has not been found already
       if (alreadyDone == savedResults.end())
       {
+        std::string names;
         for ( auto it = copies.first; it != copies.second; ++it )
         {
           names += fs::canonical(it->second).string() + ";";

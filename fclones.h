@@ -36,7 +36,7 @@ void addToBlockMap(uintmax_t fileSize, fs::path& file, std::shared_ptr<BlockMap>
 // first two blocks and saves to blockMap.
 void findDupesByLength(LengthMap *lengthMap, std::shared_ptr<BlockMap> blockMap);
 
-void addToMd5Map(fs::path& file, std::shared_ptr<Md5Map> md5Map);
+void addToMd5Map(std::string lenMd5, fs::path& file, std::shared_ptr<Md5Map> md5Map);
 
 // Finds the files with the same lengths and md5 of first two blocks and
 // determines md5 of entire file and saves to md5Map.

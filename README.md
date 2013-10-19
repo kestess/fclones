@@ -57,8 +57,6 @@ PERFTEST - somewhat - gprof didn't appear to work on my Mac. I tried using Instr
     Stage 2 completed in 27.86 seconds. Inserted 9639 entries.
     Stage 3 completed in 1.97 seconds. Inserted 5853 entries.
 
-    
-
 ESCAPISM - done by default thanks to boost::filesystem output.
 NUMBERNICE - done.
 ISTHISTHINGON - done with AL (add length), AB (add block) or AH (add hash) designators to indicate which stage the program is in. 
@@ -76,3 +74,40 @@ John Estess
 The specifications are:
 
 Deleted.
+
+Notes:
+======
+
+Total space saved after deleting duplicate files over 0 long: 78.9 MB
+Total number of files that are copies (excluding one considered an original): 9163
+Stage 1 completed in 0.55 seconds. Inserted 37746 entries.
+Stage 2 completed in 67.56 seconds. Inserted 31401 entries.
+Stage 3 completed in 2.62 seconds. Inserted 17506 entries.
+
+Total space saved after deleting duplicate files over 0 long: 78.9 MB
+Total number of files that are copies (excluding one considered an original): 9163
+Stage 1 completed in 0.56 seconds. Inserted 37746 entries.
+Stage 2 completed in 93.89 seconds. Inserted 31401 entries.
+Stage 3 completed in 2.69 seconds. Inserted 17506 entries.
+
+It's obvious the files are paged in before stage 3, but it's still a baseline.
+
+
+
+After not going back to disk for files that are less than 8 Kb long:
+====================================================================
+(data finding all files - not using 4096 limit)
+
+Total space saved after deleting duplicate files over 0 long: 78.9 MB
+Total number of files that are copies (excluding one considered an original): 9163
+Stage 1 completed in 0.54 seconds. Inserted 37746 entries.
+Stage 2 completed in 2.80 seconds. Inserted 31401 entries.
+Stage 3 completed in 2.25 seconds. Inserted 17500 entries.
+
+Total space saved after deleting duplicate files over 0 long: 78.9 MB
+Total number of files that are copies (excluding one considered an original): 9163
+Stage 1 completed in 0.54 seconds. Inserted 37746 entries.
+Stage 2 completed in 68.21 seconds. Inserted 31401 entries.
+Stage 3 completed in 2.35 seconds. Inserted 17500 entries.
+
+Over a 10% decrease...not great, but not bad.
