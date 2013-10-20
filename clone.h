@@ -46,7 +46,7 @@ public:
 	friend bool operator< (const Clone& a, const Clone& b)
 	{
 		// Will be sorted in descending order
-		return std::tie(b.diskSpaceSaved, b.fileSize) < std::tie(a.diskSpaceSaved, a.fileSize);
+		return std::tie(b.diskSpaceSaved, b.numberOfClones, b.fileSize, b.nameList) < std::tie(a.diskSpaceSaved, a.numberOfClones, a.fileSize, a.nameList);
 	}
 
 };

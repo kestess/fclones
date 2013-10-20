@@ -59,7 +59,23 @@ void descend(Directories &parent, LengthMap *lengthMap)
   if (dirs.size() > 0) descend(dirs, lengthMap);
 }
 
-void addToBlockMap(uintmax_t fileSize, fs::path& file, std::shared_ptr<BlockMap> blockMap)
+std::mutex md5_mutex; // md5 not thread safe
+std::mutex block_map_mutex;
+
+std::string md5sumThreadSafe(char *s, int len)
+{
+  std::lock_guard<std::mutex> guard(md5_mutex);
+  std::string md5 = md5sum(s, len);
+  return md5; 
+}
+
+void blockMapInsertThreadSafe( std::shared_ptr<BlockMap> blockMap, std::string lengthAndMd5, fs::path file)
+{
+  std::lock_guard<std::mutex> guard(block_map_mutex);
+  blockMap->insert(std::pair<std::string, fs::path>(lengthAndMd5, file)); 
+}
+
+void addToBlockMap(const uintmax_t& fileSize, const fs::path& file, std::shared_ptr<BlockMap> blockMap)
 {
 
   try {
@@ -78,13 +94,14 @@ void addToBlockMap(uintmax_t fileSize, fs::path& file, std::shared_ptr<BlockMap>
       // WARNING!!! binary files will have NULLS and special characters - must pass length without
       // using strlen or anything else that terminates with a NULL
 
-      checksum = md5sum(block, len);
+      // checksum = md5sum(block, len);
+      checksum = md5sumThreadSafe(block, len);
       delete[] block;
 
       std::string lengthAndMd5 = std::to_string(fileSize) + "_" + checksum;
       if (clo::isthisthingon) std::cout << "AB " << file << std::endl;
-      blockMap->insert(std::pair<std::string, fs::path>(lengthAndMd5, file));
-
+      //blockMap->insert(std::pair<std::string, fs::path>(lengthAndMd5, file));
+      blockMapInsertThreadSafe(blockMap, lengthAndMd5, file);
       f.close();
     }
 
@@ -93,19 +110,20 @@ void addToBlockMap(uintmax_t fileSize, fs::path& file, std::shared_ptr<BlockMap>
   }
 }
 
-void findDupesByLength(LengthMap *lengthMap, std::shared_ptr<BlockMap> blockMap)
+void findDupesByLength(const unsigned int first, const unsigned int last,
+                       const LengthMap * const lengthMap, std::shared_ptr<BlockMap> blockMap)
 {
-  unsigned int bucket = 0;
-  unsigned int bucket_last = 0;
-  unsigned int bucket_len = lengthMap->bucket_count();
+  unsigned int bucket = first;
+  unsigned int bucket_last = bucket;
 
-  for (bucket = 0; bucket < bucket_len; ++bucket) 
+  for (bucket = first; bucket < last; ++bucket) 
   {
 
     if (clo::arewethereyet && bucket != bucket_last && (bucket % globals::BUCKET_INCREMENT == 0) )
     {
-      std::cout << "Stage 2 of 3 is " <<  std::setprecision(0) << std::fixed
-                << static_cast<float>(bucket)/bucket_len * 100 << "% done." << std::endl;
+      // need to be fixed due to range checks during threading.
+      //std::cout << "Stage 2 of 3 is " <<  std::setprecision(0) << std::fixed
+      //          << static_cast<float>(bucket)/bucket_len * 100 << "% done." << std::endl;
       bucket_last = bucket;
     }
 
@@ -120,6 +138,14 @@ void findDupesByLength(LengthMap *lengthMap, std::shared_ptr<BlockMap> blockMap)
     } 
 
   }
+}
+
+std::mutex md5_map_mutex;
+
+void md5MapInsertThreadSafe( std::shared_ptr<Md5Map> md5Map, std::string md5, fs::path file)
+{
+  std::lock_guard<std::mutex> guard(md5_map_mutex);
+  md5Map->insert(std::pair<std::string, fs::path>(md5, file)); 
 }
 
 // Now for the md5 of the whole file
@@ -138,39 +164,40 @@ void addToMd5Map(std::string lenMd5, fs::path& file, std::shared_ptr<Md5Map> md5
        std::streambuf* raw_buffer = f.rdbuf();
        char* block = new char[size];
        raw_buffer->sgetn(block, size);
-       checksum = md5sum(block, size);
+       checksum = md5sumThreadSafe(block, size);
        delete[] block;
 
        if (clo::isthisthingon) std::cout << "AH " << file << std::endl;
-       md5Map->insert(std::pair<std::string, fs::path>(checksum, file));
+       md5MapInsertThreadSafe(md5Map, checksum, file);
        f.close();
       }
-    }  
+    } 
     else
     {
       std::string md5 = lenMd5.substr( lenMd5.find_first_of("_") + 1 );
       if (clo::isthisthingon) std::cout << "AH " << file << std::endl;
-      md5Map->insert(std::pair<std::string, fs::path>(md5, file));
+      // md5Map->insert(std::pair<std::string, fs::path>(md5, file));
+      md5MapInsertThreadSafe(md5Map, md5, file);
     }
-  
   } catch (...) {
       std::cerr << "Exception caught in addToMd5Map." << std::endl;
   }
 }
 
-void findDupesByLengthAndBlocks(std::shared_ptr<BlockMap> blockMap, std::shared_ptr<Md5Map> md5Map)
+void findDupesByLengthAndBlocks(const unsigned int first, const unsigned int last,
+                                std::shared_ptr<BlockMap> blockMap, std::shared_ptr<Md5Map> md5Map)
 {
-  unsigned int bucket = 0;
-  unsigned int bucket_last = 0;
-  unsigned int bucket_len = blockMap->bucket_count();
+  unsigned int bucket = first;
+  unsigned int bucket_last = bucket;
 
-  for (bucket = 0; bucket < bucket_len; ++bucket)
+  for (bucket = first; bucket < last; ++bucket) 
   {
 
-    if (clo::arewethereyet && bucket != bucket_last && (bucket % globals::BUCKET_INCREMENT == 0) )
+    if ( clo::arewethereyet && bucket != bucket_last && (bucket % globals::BUCKET_INCREMENT == 0) )
     {
-        std::cout << "Stage 3 of 3 is " <<  std::setprecision(0) << std::fixed
-                  << static_cast<float>(bucket)/bucket_len * 100 << "% done." << std::endl;
+        // messed up when theading was introduced.
+        //std::cout << "Stage 3 of 3 is " <<  std::setprecision(0) << std::fixed
+        //          << static_cast<float>(bucket)/bucket_len * 100 << "% done." << std::endl;
         bucket_last = bucket;                   
     }
 

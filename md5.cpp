@@ -53,7 +53,7 @@ unsigned rol( unsigned v, short amt )
     unsigned  msk1 = (1<<amt) -1;
     return ((v>>(32-amt)) & msk1) | ((v<<amt) & ~msk1);
 }
- 
+
 unsigned *md5( const char *msg, int mlen) 
 {
     static Digest h0 = { 0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476 };

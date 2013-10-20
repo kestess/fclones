@@ -1,7 +1,7 @@
 CXX=g++
 CFLAGS=-O3
 RM=rm -f
-OBJS=fclones main.o fclones.o clone.o md5.o fclones_test.o fclones_test testing/*
+OBJS=fclones *.o fclones_test testing/* 
 
 main: main.o
 	$(CXX) -o fclones $(CFLAGS) main.o fclones.o clone.o md5.o -L/usr/local/boost/lib -lboost_system -lboost_filesystem -lboost_program_options --std=c++11	

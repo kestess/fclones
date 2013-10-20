@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <ctime>
+#
 
 int main(int argc, char *argv[])
 {
@@ -115,7 +116,31 @@ int main(int argc, char *argv[])
     << lengthMapSize << " entries in " << elapsed_seconds_1.count() << " seconds." << std::endl;
 
   start = std::chrono::system_clock::now();
-  findDupesByLength(lengthMap, blockMap);
+
+  // hardware_concurrency might return 0 if not defined
+  unsigned int num_threads = std::max(std::thread::hardware_concurrency(), 1U);
+  unsigned int num_buckets = lengthMap->bucket_count();
+
+  // 5 is a magic constant that should never have to be changed. Famous last words.
+  // Prevents from having a range of 0 and starting threads for a trivial task.
+  if (num_threads > num_buckets/5) num_threads = 1;   
+
+  unsigned int range = num_buckets/num_threads;
+
+  std::vector<std::thread> threads(num_threads - 1);
+
+  for ( unsigned int i = 0; i < (num_threads - 1); ++i )
+  { 
+    threads[i] = std::thread(findDupesByLength, i * range, i * range + range, lengthMap, blockMap); 
+  }
+
+  findDupesByLength( (num_threads - 1) * range, num_buckets, lengthMap, blockMap);
+
+  if (num_threads > 1)
+  {
+    std::for_each(threads.begin(), threads.end(), std::mem_fn(&std::thread::join));
+  }
+
   end = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed_seconds_2 = end - start;  
 
@@ -135,7 +160,27 @@ int main(int argc, char *argv[])
   std::chrono::duration<double> elapsed_seconds_3;
   if ( !clo::fastandloose ) {
     start = std::chrono::system_clock::now();
-    findDupesByLengthAndBlocks(blockMap, md5Map);
+
+    num_buckets = blockMap->bucket_count();
+
+  // 5 is a magic constant that should never have to be changed. Famous last words.
+  // Prevents from having a range of 0 and starting threads for a trivial task.
+    if (num_threads > num_buckets/5) num_threads = 1;    
+
+    range = num_buckets/num_threads;
+
+    for ( unsigned int i = 0; i < (num_threads - 1); ++i )
+    { 
+      threads[i] = std::thread(findDupesByLengthAndBlocks, i * range, i * range + range, blockMap, md5Map); 
+    }
+
+    findDupesByLengthAndBlocks( (num_threads - 1) * range, num_buckets, blockMap, md5Map);
+
+    if (num_threads > 1)
+    {
+      std::for_each(threads.begin(), threads.end(), std::mem_fn(&std::thread::join));
+    }
+
     end = std::chrono::system_clock::now();
     elapsed_seconds_3 = end - start;
     if ( clo::isthisthingon || clo::perftest ) std::cout << "Stage 3 of 3 (H): Inserted " 
@@ -157,7 +202,7 @@ int main(int argc, char *argv[])
   Clone::printHeading();
   for ( auto clone = clones->begin(); clone != clones->end(); ++clone )
   {
-    (clo::numbernice) ? clone->prettyPrint() : clone->print();
+    (clo::numbernice) ? clone->prettyPrint() : clone->print(); 
     savedSpace += clone->diskSpaceSaved;
     numOfFilesToDelete += (clone->numberOfClones - 1);
   }

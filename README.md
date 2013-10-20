@@ -111,3 +111,111 @@ Stage 2 completed in 68.21 seconds. Inserted 31401 entries.
 Stage 3 completed in 2.35 seconds. Inserted 17500 entries.
 
 Over a 10% decrease...not great, but not bad.
+
+I had a six more files, but they are gone now. Reverted the code and still had 17500 files. Mysql?
+Testing on live data is great, but it can drive you crazy.
+
+Before thread-safe blockMap insert:
+./fclones -m 0 -p /usr/local
+-Stage 1 of 3 (L): Inserted 18083 entries in 0.446768 seconds.
+-Stage 2 of 3 (B): Inserted 13503 entries in 35.1348 seconds.
+-Stage 3 of 3 (H): Inserted 10709 entries in 12.085 seconds.
+
+After running a few times to make sure /usr/local is mostly in memory using "./fclones -a -p /usr/local"
+(I'm only testing the mutex penalty at the moment)
+
+Stage 1 completed in 0.48 seconds. Inserted 15554 entries.
+Stage 2 completed in 1.50 seconds. Inserted 9639 entries.
+Stage 3 completed in 1.66 seconds. Inserted 5847 entries.
+
+Stage 1 completed in 0.49 seconds. Inserted 15554 entries.
+Stage 2 completed in 1.70 seconds. Inserted 9639 entries.
+Stage 3 completed in 1.61 seconds. Inserted 5847 entries.
+
+There doesn't seem to be a mutex penalty, but the compiler might have noticed the program
+was still multi-threaded:
+
+Stage 1 completed in 0.48 seconds. Inserted 15554 entries.
+Stage 2 completed in 1.24 seconds. Inserted 9639 entries.
+Stage 3 completed in 1.64 seconds. Inserted 5847 entries.
+
+// After threading stage 2 four ways (my hardware concurrency)
+Total space saved after deleting duplicate files over 4096 long: 3.5 MB
+Total number of files that are copies (excluding one considered an original): 344
+Stage 1 completed in 0.48 seconds. Inserted 15554 entries.
+Stage 2 completed in 0.74 seconds. Inserted 9639 entries.
+Stage 3 completed in 0.08 seconds. Inserted 648 entries.  // Oops!!!
+
+running just the one thread works:
+Total space saved after deleting duplicate files over 4096 long: 69.7 MB
+Total number of files that are copies (excluding one considered an original): 3053
+Stage 1 completed in 0.48 seconds. Inserted 15554 entries.
+Stage 2 completed in 2.36 seconds. Inserted 9639 entries.
+Stage 3 completed in 5.06 seconds. Inserted 5847 entries.
+
+4 threads (unfortunately md5 is not thread safe so the whole thing is mutexed...):
+Stage 1 completed in 0.51 seconds. Inserted 15554 entries.
+Stage 2 completed in 0.96 seconds. Inserted 9639 entries.
+Stage 3 completed in 1.66 seconds. Inserted 5847 entries.
+
+Total space saved after deleting duplicate files over 4096 long: 69.7 MB
+Total number of files that are copies (excluding one considered an original): 3053
+Stage 1 completed in 0.50 seconds. Inserted 15554 entries.
+Stage 2 completed in 0.97 seconds. Inserted 9639 entries.
+Stage 3 completed in 1.67 seconds. Inserted 5847 entries.
+
+Both stage 2 and 3 are now threaded. MD5 is not.
+
+Total space saved after deleting duplicate files over 4096 long: 8.2 MB
+Total number of files that are copies (excluding one considered an original): 1364
+Stage 1 completed in 0.49 seconds. Inserted 15554 entries.
+Stage 2 completed in 0.94 seconds. Inserted 9639 entries.
+Stage 3 completed in 0.77 seconds. Inserted 5847 entries.
+
+Wow - and that was a bomb
+
+Stage 1 completed in 0.48 seconds. Inserted 15554 entries.
+Stage 2 completed in 0.94 seconds. Inserted 9639 entries.
+Stage 3 completed in 1.39 seconds. Inserted 5847 entries.
+
+Back to single threaded (num_threads = 1)
+
+Stage 1 completed in 0.51 seconds. Inserted 15554 entries.
+Stage 2 completed in 1.21 seconds. Inserted 9639 entries.
+Stage 3 completed in 1.56 seconds. Inserted 5847 entries.
+
+Stage 1 completed in 0.52 seconds. Inserted 15554 entries.
+Stage 2 completed in 1.59 seconds. Inserted 9639 entries.
+Stage 3 completed in 2.86 seconds. Inserted 5847 entries.
+
+
+Total space saved after deleting duplicate files over 0 long: 78.9 MB
+Total number of files that are copies (excluding one considered an original): 9163
+Stage 1 completed in 0.54 seconds. Inserted 37746 entries.
+Stage 2 completed in 2.80 seconds. Inserted 31401 entries.
+Stage 3 completed in 2.25 seconds. Inserted 17500 entries.
+
+
+Forcing one processor:
+Total space saved after deleting duplicate files over 0 long: 78.9 MB
+Total number of files that are copies (excluding one considered an original): 9163
+Stage 1 completed in 0.54 seconds. Inserted 37746 entries.
+Stage 2 completed in 2.80 seconds. Inserted 31401 entries.
+Stage 3 completed in 2.21 seconds. Inserted 17500 entries.
+
+FOUR
+====
+Total space saved after deleting duplicate files over 0 long: 78.9 MB
+Total number of files that are copies (excluding one considered an original): 9163
+Stage 1 completed in 0.54 seconds. Inserted 37746 entries.
+Stage 2 completed in 2.77 seconds. Inserted 31401 entries.
+Stage 3 completed in 1.56 seconds. Inserted 17500 entries.
+
+THREE
+=====
+"Saved Space","Number Of Duplicates","File Size","List of Names"
+Total space saved after deleting duplicate files over 0 long: 78.9 MB
+Total number of files that are copies (excluding one considered an original): 9163
+Stage 1 completed in 0.55 seconds. Inserted 37746 entries.
+Stage 2 completed in 2.82 seconds. Inserted 31401 entries.
+Stage 3 completed in 1.63 seconds. Inserted 17500 entries.
