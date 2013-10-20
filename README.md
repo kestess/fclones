@@ -196,7 +196,7 @@ Stage 2 completed in 2.80 seconds. Inserted 31401 entries.
 Stage 3 completed in 2.25 seconds. Inserted 17500 entries.
 
 
-Forcing one processor:
+Forcing one processor ONE:
 Total space saved after deleting duplicate files over 0 long: 78.9 MB
 Total number of files that are copies (excluding one considered an original): 9163
 Stage 1 completed in 0.54 seconds. Inserted 37746 entries.
@@ -219,3 +219,34 @@ Total number of files that are copies (excluding one considered an original): 91
 Stage 1 completed in 0.55 seconds. Inserted 37746 entries.
 Stage 2 completed in 2.82 seconds. Inserted 31401 entries.
 Stage 3 completed in 1.63 seconds. Inserted 17500 entries.
+
+
+OK - I accepted the multi-core program for the time being
+
+New times in the morning after running against ~ for a while and then switching back to /usr/local
+
+Total space saved after deleting duplicate files over 0 long: 78.9 MB
+Total number of files that are copies (excluding one considered an original): 9163
+Stage 1 completed in 4.64 seconds. Inserted 37746 entries.
+Stage 2 completed in 532.44 seconds. Inserted 31401 entries.
+Stage 3 completed in 41.81 seconds. Inserted 17500 entries.
+
+real    9m40.273s
+user    0m10.613s
+sys 0m11.381s
+
+This sucks.
+
+
+Forcing one processor again (after flushing cache):
+
+Total space saved after deleting duplicate files over 0 long: 78.9 MB
+Total number of files that are copies (excluding one considered an original): 9163
+Stage 1 completed in 4.48 seconds. Inserted 37746 entries.
+Stage 2 completed in 530.29 seconds. Inserted 31401 entries.
+Stage 3 completed in 51.57 seconds. Inserted 17500 entries.
+
+In short, threading doesn't really help or hurt on my mini mac. Sad.
+
+
+

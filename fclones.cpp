@@ -11,6 +11,8 @@ bool command_line_options::numbernice = false;
 bool command_line_options::perftest = false;
 std::string command_line_options::starting_directory;
 
+std::atomic<int> atomic_counter(0);
+
 // Add directories to working directory list
 void descend(Directories &parent, LengthMap *lengthMap)
 {
@@ -72,6 +74,7 @@ std::string md5sumThreadSafe(char *s, int len)
 void blockMapInsertThreadSafe( std::shared_ptr<BlockMap> blockMap, std::string lengthAndMd5, fs::path file)
 {
   std::lock_guard<std::mutex> guard(block_map_mutex);
+  if (clo::isthisthingon) std::cout << "AB " << file << std::endl;
   blockMap->insert(std::pair<std::string, fs::path>(lengthAndMd5, file)); 
 }
 
@@ -94,13 +97,10 @@ void addToBlockMap(const uintmax_t& fileSize, const fs::path& file, std::shared_
       // WARNING!!! binary files will have NULLS and special characters - must pass length without
       // using strlen or anything else that terminates with a NULL
 
-      // checksum = md5sum(block, len);
       checksum = md5sumThreadSafe(block, len);
       delete[] block;
 
       std::string lengthAndMd5 = std::to_string(fileSize) + "_" + checksum;
-      if (clo::isthisthingon) std::cout << "AB " << file << std::endl;
-      //blockMap->insert(std::pair<std::string, fs::path>(lengthAndMd5, file));
       blockMapInsertThreadSafe(blockMap, lengthAndMd5, file);
       f.close();
     }
@@ -108,6 +108,16 @@ void addToBlockMap(const uintmax_t& fileSize, const fs::path& file, std::shared_
   } catch (...) {
     std::cerr << "Exception caught in addToBlockMap." << std::endl;
   }
+}
+
+std::mutex logging_map_mutex;
+
+void loggingLengthThreadSafe(const LengthMap * const lengthMap)
+{
+  std::lock_guard<std::mutex> guard(logging_map_mutex);
+      std::cout << "Stage 2 of 3 is " << std::setprecision(1) << std::fixed
+                << static_cast<float>(atomic_counter)/lengthMap->bucket_count() * 100 << "% done." << std::endl;
+
 }
 
 void findDupesByLength(const unsigned int first, const unsigned int last,
@@ -118,12 +128,10 @@ void findDupesByLength(const unsigned int first, const unsigned int last,
 
   for (bucket = first; bucket < last; ++bucket) 
   {
-
+    atomic_counter++;
     if (clo::arewethereyet && bucket != bucket_last && (bucket % globals::BUCKET_INCREMENT == 0) )
     {
-      // need to be fixed due to range checks during threading.
-      //std::cout << "Stage 2 of 3 is " <<  std::setprecision(0) << std::fixed
-      //          << static_cast<float>(bucket)/bucket_len * 100 << "% done." << std::endl;
+      loggingLengthThreadSafe(lengthMap);
       bucket_last = bucket;
     }
 
@@ -145,6 +153,7 @@ std::mutex md5_map_mutex;
 void md5MapInsertThreadSafe( std::shared_ptr<Md5Map> md5Map, std::string md5, fs::path file)
 {
   std::lock_guard<std::mutex> guard(md5_map_mutex);
+  if (clo::isthisthingon) std::cout << "AH " << file << std::endl;
   md5Map->insert(std::pair<std::string, fs::path>(md5, file)); 
 }
 
@@ -167,7 +176,6 @@ void addToMd5Map(std::string lenMd5, fs::path& file, std::shared_ptr<Md5Map> md5
        checksum = md5sumThreadSafe(block, size);
        delete[] block;
 
-       if (clo::isthisthingon) std::cout << "AH " << file << std::endl;
        md5MapInsertThreadSafe(md5Map, checksum, file);
        f.close();
       }
@@ -175,13 +183,19 @@ void addToMd5Map(std::string lenMd5, fs::path& file, std::shared_ptr<Md5Map> md5
     else
     {
       std::string md5 = lenMd5.substr( lenMd5.find_first_of("_") + 1 );
-      if (clo::isthisthingon) std::cout << "AH " << file << std::endl;
-      // md5Map->insert(std::pair<std::string, fs::path>(md5, file));
       md5MapInsertThreadSafe(md5Map, md5, file);
     }
   } catch (...) {
       std::cerr << "Exception caught in addToMd5Map." << std::endl;
   }
+}
+
+void loggingBlocksThreadSafe(const std::shared_ptr<BlockMap> blockMap)
+{
+  std::lock_guard<std::mutex> guard(logging_map_mutex);
+      std::cout << "Stage 3 of 3 is " << std::setprecision(1) << std::fixed
+                << static_cast<float>(atomic_counter)/blockMap->bucket_count() * 100 << "% done." << std::endl;
+
 }
 
 void findDupesByLengthAndBlocks(const unsigned int first, const unsigned int last,
@@ -190,14 +204,14 @@ void findDupesByLengthAndBlocks(const unsigned int first, const unsigned int las
   unsigned int bucket = first;
   unsigned int bucket_last = bucket;
 
+  atomic_counter = 0;
+
   for (bucket = first; bucket < last; ++bucket) 
   {
-
+    atomic_counter++;
     if ( clo::arewethereyet && bucket != bucket_last && (bucket % globals::BUCKET_INCREMENT == 0) )
     {
-        // messed up when theading was introduced.
-        //std::cout << "Stage 3 of 3 is " <<  std::setprecision(0) << std::fixed
-        //          << static_cast<float>(bucket)/bucket_len * 100 << "% done." << std::endl;
+        loggingBlocksThreadSafe(blockMap);
         bucket_last = bucket;                   
     }
 

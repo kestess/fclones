@@ -163,9 +163,9 @@ int main(int argc, char *argv[])
 
     num_buckets = blockMap->bucket_count();
 
-  // 5 is a magic constant that should never have to be changed. Famous last words.
+  // 10 is a magic constant that should never have to be changed. Famous last words.
   // Prevents from having a range of 0 and starting threads for a trivial task.
-    if (num_threads > num_buckets/5) num_threads = 1;    
+    if (num_threads > num_buckets/10) num_threads = 1;    
 
     range = num_buckets/num_threads;
 

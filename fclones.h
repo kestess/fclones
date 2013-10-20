@@ -4,6 +4,7 @@
 #include "clone.h"
 
 #include <algorithm>
+#include <atomic>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/program_options.hpp>
@@ -28,6 +29,7 @@ typedef std::unordered_multimap<uintmax_t, fs::path> LengthMap;
 typedef std::unordered_multimap<std::string, fs::path> BlockMap;
 typedef std::unordered_multimap<std::string, fs::path> Md5Map;
 typedef std::unordered_set<std::string> HashResults;
+typedef std::unordered_set<fs::path> HardLinks;
 
 // Descends recursively - breadth-first so a depth limiter might easily be
 // added later. Adds all files and their lengths to the lengthMap.
