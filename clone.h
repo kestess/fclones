@@ -40,13 +40,19 @@ public:
     // ESCAPISM - file names were double-quoted by default due to the use of boost::filesystem
 	void print() const
 	{
-		std::cout << diskSpaceSaved << "," << numClones - 1 << "," << fileSize << "," << nameList << std::endl;
+		if (numClones > 1)
+		{
+			std::cout << diskSpaceSaved << "," << numClones - 1 << "," << fileSize << "," << nameList << std::endl;
+		}
 	}
 
 	void prettyPrint() const
 	{
-		std::cout << formatFileSize(diskSpaceSaved) << "," << numClones - 1 << "," 
-		          << formatFileSize(fileSize) << "," << nameList << std::endl;
+		if (numClones > 1)
+		{	
+			std::cout << formatFileSize(diskSpaceSaved) << "," << numClones - 1 << "," 
+		          	  << formatFileSize(fileSize) << "," << nameList << std::endl;
+		}
 	}
 
 	static std::tuple<std::string, unsigned long long> getFileSizeFormatting(unsigned long long size);
