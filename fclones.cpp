@@ -38,9 +38,9 @@ void descend(Directories &parent, LengthMap *lengthMap)
       }
 
       try {
-        if (exists(entry) && !fs::is_symlink(entry) ) // SYMLINKY
+        if (exists(entry) && !fs::is_symlink(entry) ) // SYMLINKY ignore symlinked directories and files.
         {
-          if ( fs::is_regular_file(entry) && !fs::is_symlink(entry) )  
+          if ( fs::is_regular_file(entry) )  
           {
             unsigned long long size = fs::file_size(entry);
             if (size >= clo::minbytes) {
@@ -249,15 +249,17 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
       // hash has not been found already
       if (alreadyDone == savedResults.end())
       {
-        std::string names;
+        //std::string names;
+        std::shared_ptr<std::vector<fs::path>> files = std::make_shared<std::vector<fs::path>>();
         for ( auto it = copies.first; it != copies.second; ++it )
         {
-          names += fs::canonical(it->second).string() + ";";
+          // names += fs::canonical(it->second).string() + ";";
+          files->push_back(it->second);
         }
-        if (names.length() > 0) names.pop_back(); // remove trailing semicolon
+        //if (names.length() > 0) names.pop_back(); // remove trailing semicolon
         //std::cout << "First time for  " << hash << std::endl;   
-        unsigned long long filesize = fs::file_size(bucket->second);
-        Clone clone(md5Map->count(bucket->first), filesize, names);
+        // unsigned long long filesize = fs::file_size(bucket->second);
+        Clone clone(files);
         savedResults.insert(hash);
         clones->push_back(clone);
       }

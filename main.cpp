@@ -121,9 +121,9 @@ int main(int argc, char *argv[])
   unsigned int num_threads = std::max(std::thread::hardware_concurrency(), 1U);
   unsigned int num_buckets = lengthMap->bucket_count();
 
-  // 5 is a magic constant that should never have to be changed. Famous last words.
+  // 10 is a magic constant that should never have to be changed. Famous last words.
   // Prevents from having a range of 0 and starting threads for a trivial task.
-  if (num_threads > num_buckets/5) num_threads = 1;   
+  if (num_threads > num_buckets/10) num_threads = 1;   
 
   unsigned int range = num_buckets/num_threads;
 
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
   {
     (clo::numbernice) ? clone->prettyPrint() : clone->print(); 
     savedSpace += clone->diskSpaceSaved;
-    numOfFilesToDelete += (clone->numberOfClones - 1);
+    numOfFilesToDelete += (clone->numClones - 1);
   }
   std::cout << "Total space saved after deleting duplicate files over " << clo::minbytes 
             << " long: " << Clone::formatFileSize(savedSpace) << std::endl;

@@ -1,5 +1,5 @@
 CXX=g++
-CFLAGS=-O3
+CFLAGS=-g
 RM=rm -f
 OBJS=fclones *.o fclones_test testing/* 
 

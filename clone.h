@@ -3,9 +3,14 @@
 
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <tuple>
 #include <vector>
+
+#include <boost/filesystem.hpp>
+
+namespace fs = boost::filesystem;
 
 class Clone
 {
@@ -13,13 +18,18 @@ class Clone
 public:
 
     unsigned long long diskSpaceSaved;
-	unsigned int numberOfClones;
+	unsigned int numClones;
 	unsigned long long fileSize;
+	std::shared_ptr<std::vector<fs::path>> files;
 	std::string nameList;
 
-	Clone(unsigned int numberOfClones,
-          unsigned long long fileSize,
-          std::string nameList);
+	Clone(//unsigned int numClones,
+          //unsigned long long fileSize,
+          std::shared_ptr<std::vector<fs::path>> files);
+
+    // This is quadratic, but it's your own fault if you are using hard links.
+    // Removes the disk space saved and reduces the number of clones to reflect only one inode per file.
+    void adjustHardLinks();
 
     static void printHeading()
     {
@@ -30,12 +40,12 @@ public:
     // ESCAPISM - file names were double-quoted by default due to the use of boost::filesystem
 	void print() const
 	{
-		std::cout << diskSpaceSaved << "," << numberOfClones - 1 << "," << fileSize << "," << nameList << std::endl;
+		std::cout << diskSpaceSaved << "," << numClones - 1 << "," << fileSize << "," << nameList << std::endl;
 	}
 
 	void prettyPrint() const
 	{
-		std::cout << formatFileSize(diskSpaceSaved) << "," << numberOfClones - 1 << "," 
+		std::cout << formatFileSize(diskSpaceSaved) << "," << numClones - 1 << "," 
 		          << formatFileSize(fileSize) << "," << nameList << std::endl;
 	}
 
@@ -46,7 +56,7 @@ public:
 	friend bool operator< (const Clone& a, const Clone& b)
 	{
 		// Will be sorted in descending order
-		return std::tie(b.diskSpaceSaved, b.numberOfClones, b.fileSize, b.nameList) < std::tie(a.diskSpaceSaved, a.numberOfClones, a.fileSize, a.nameList);
+		return std::tie(b.diskSpaceSaved, b.numClones, b.fileSize, b.nameList) < std::tie(a.diskSpaceSaved, a.numClones, a.fileSize, a.nameList);
 	}
 
 };
