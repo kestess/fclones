@@ -1,8 +1,6 @@
 #include "clone.h"
 
-Clone::Clone(//unsigned int numClones,
-             //unsigned long long fileSize,
-             std::shared_ptr<std::vector<fs::path>> files)
+Clone::Clone(std::shared_ptr<std::vector<fs::path>> files)
 {
   this->fileSize = fs::file_size(files->at(0)); // Will throw exception if no clones, but shouldn't be able to get here.
   this->numClones = files->size();
@@ -25,6 +23,7 @@ void Clone::adjustHardLinks()
     if ( fs::hard_link_count(*file) > 1 )
     {
       // Just because it is hard-linked doesn't mean both links exist in the directory tree that was searched.
+      // Remove from consideration once checked.
       for ( auto fileredux = files->begin(); fileredux != files->end(); ++fileredux )
       {
         already_counted[file - files->begin()] = true;

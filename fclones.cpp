@@ -43,9 +43,10 @@ void descend(Directories &parent, LengthMap *lengthMap)
           if ( fs::is_regular_file(entry) )  
           {
             unsigned long long size = fs::file_size(entry);
-            if (size >= clo::minbytes) {
+            if (size >= clo::minbytes)
+            {
               if (clo::isthisthingon) std::cout << "AL " << entry << std::endl;
-              lengthMap->insert(std::pair<uintmax_t, fs::path>(fs::file_size(entry), entry));
+              lengthMap->insert(std::pair<uintmax_t, fs::path>(size, entry));
             }  
           }
           else if ( fs::is_directory(entry) )
