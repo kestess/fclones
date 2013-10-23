@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     ("arewethereyet,a", "Provide progress indicators.") // AREWETHEREYET 
     ("directory,d", po::value<std::string>(), "Starting directory for scan. Could also be last unnamed parameter.")
     ("fastandloose,f", "Minimal check of length and a few file blocks.") // FASTANDLOOSE
-    ("help,h", "Show this message")
+    ("help,h", "Show this message.")
     ("isthisthingon,i", "Print file currently being processed.") // ISTHISTHINGON
     ("minbytes,m", po::value<unsigned long long>(), "Minimum size of file to scan in bytes.")
     ("numbernice,n", "Output in fixed format with units.") // NUMBERNICE
@@ -45,7 +45,8 @@ int main(int argc, char *argv[])
     } 
     else  // XXX remove after review
     {
-      std::cerr << "Starting directory required." << std::endl;
+      std::cerr << "ERROR: Starting directory required." << std::endl
+                << desc << std::endl;
       return 1;
     }  
 
