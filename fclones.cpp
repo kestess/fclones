@@ -14,7 +14,7 @@ std::string command_line_options::starting_directory;
 std::atomic<int> atomic_counter(0);
 
 // Add directories to working directory list
-void descend(Directories &parent, LengthMap *lengthMap)
+void descend(Directories &parent, Files &files, LengthMap *lengthMap)
 {
   // XXX not currently used
   static int counter = 0;
@@ -47,6 +47,7 @@ void descend(Directories &parent, LengthMap *lengthMap)
             {
               if (clo::isthisthingon) std::cout << "AL " << entry << std::endl;
               lengthMap->insert(std::pair<uintmax_t, fs::path>(size, entry));
+              files.push_back(std::pair<fs::path, uintmax_t>(entry, size));
             }  
           }
           else if ( fs::is_directory(entry) )
@@ -59,7 +60,7 @@ void descend(Directories &parent, LengthMap *lengthMap)
       }
     });	
   }
-  if (dirs.size() > 0) descend(dirs, lengthMap);
+  if (dirs.size() > 0) descend(dirs, files, lengthMap);
 }
 
 std::mutex md5_mutex; // md5 not thread safe
@@ -79,7 +80,7 @@ void blockMapInsertThreadSafe( std::shared_ptr<BlockMap> blockMap, std::string l
   blockMap->insert(std::pair<std::string, fs::path>(lengthAndMd5, file)); 
 }
 
-void addToBlockMap(const uintmax_t& fileSize, const fs::path& file, std::shared_ptr<BlockMap> blockMap)
+void addToBlockMap(const uintmax_t fileSize, const fs::path file, std::shared_ptr<BlockMap> blockMap)
 {
 
   try {
@@ -122,8 +123,28 @@ void loggingLengthThreadSafe(const LengthMap * const lengthMap)
 }
 
 void findDupesByLength(const unsigned int first, const unsigned int last,
-                       const LengthMap * const lengthMap, std::shared_ptr<BlockMap> blockMap)
+                       const LengthMap * const lengthMap, const Files &files, std::shared_ptr<BlockMap> blockMap)
 {
+
+  //for (auto file : files)
+  for ( unsigned int i = first; i < last; ++i )
+  {
+    atomic_counter++;
+    
+
+    if (clo::arewethereyet && (atomic_counter % globals::BUCKET_INCREMENT == 0) )
+    {
+      loggingLengthThreadSafe(lengthMap); 
+    }
+
+    if ( lengthMap->count(files[i].second) > 1 )
+    {
+      addToBlockMap(files[i].second, files[i].first, blockMap);  
+    }
+  }
+
+
+/*
   unsigned int bucket = first;
   unsigned int bucket_last = bucket;
 
@@ -147,6 +168,8 @@ void findDupesByLength(const unsigned int first, const unsigned int last,
     } 
 
   }
+
+*/  
 }
 
 std::mutex md5_map_mutex;

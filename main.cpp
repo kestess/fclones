@@ -92,6 +92,7 @@ int main(int argc, char *argv[])
   LengthMap *lengthMap = new LengthMap();
   auto blockMap  = std::make_shared<BlockMap>();
   auto md5Map    = std::make_shared<Md5Map>();
+  Files files;
 
   // XXX As soon as this is reviewed this will be changed back.
   // fs::path dir = (clo::starting_directory == "") ? fs::current_path() : clo::starting_directory;
@@ -107,7 +108,15 @@ int main(int argc, char *argv[])
 
   std::chrono::time_point<std::chrono::system_clock> start, end;
   start = std::chrono::system_clock::now();
-  descend(dirs, lengthMap); // creates the length Hash of all the files.
+  descend(dirs, files, lengthMap); // creates the length Hash of all the files.
+
+/*
+  for (auto file : files)
+  {
+    std::cout << file.first << "    " << file.second << std::endl;
+  }
+*/
+
   end = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed_seconds_1 = end - start;
   unsigned int lengthMapSize = lengthMap->size();
@@ -119,22 +128,23 @@ int main(int argc, char *argv[])
 
   // hardware_concurrency might return 0 if not defined
   unsigned int num_threads = std::max(std::thread::hardware_concurrency(), 1U);
-  unsigned int num_buckets = lengthMap->bucket_count();
+  // unsigned int num_buckets = lengthMap->bucket_count();
+  unsigned int num_files = files.size();
 
   // 10 is a magic constant that should never have to be changed. Famous last words.
   // Prevents from having a range of 0 and starting threads for a trivial task.
-  if (num_threads > num_buckets/10) num_threads = 1;   
+  if (num_threads > num_files/10) num_threads = 1; 
 
-  unsigned int range = num_buckets/num_threads;
+  unsigned int range = num_files/num_threads;
 
   std::vector<std::thread> threads(num_threads - 1);
 
   for ( unsigned int i = 0; i < (num_threads - 1); ++i )
   { 
-    threads[i] = std::thread(findDupesByLength, i * range, i * range + range, lengthMap, blockMap); 
+    threads[i] = std::thread(findDupesByLength, i * range, i * range + range, lengthMap, files, blockMap); 
   }
 
-  findDupesByLength( (num_threads - 1) * range, num_buckets, lengthMap, blockMap);
+  findDupesByLength( (num_threads - 1) * range, num_files, lengthMap, files, blockMap);
 
   if (num_threads > 1)
   {
@@ -161,7 +171,7 @@ int main(int argc, char *argv[])
   if ( !clo::fastandloose ) {
     start = std::chrono::system_clock::now();
 
-    num_buckets = blockMap->bucket_count();
+    unsigned int num_buckets = blockMap->bucket_count();
 
   // 10 is a magic constant that should never have to be changed. Famous last words.
   // Prevents from having a range of 0 and starting threads for a trivial task.

@@ -27,16 +27,17 @@ typedef std::unordered_multimap<uintmax_t, fs::path> LengthMap;
 typedef std::unordered_multimap<std::string, fs::path> BlockMap;
 typedef std::unordered_multimap<std::string, fs::path> Md5Map;
 typedef std::unordered_set<std::string> HashResults;
+typedef std::vector<std::pair<fs::path,uintmax_t>> Files;
 
 // Descends recursively - breadth-first so a depth limiter might easily be
 // added later. Adds all files and their lengths to the lengthMap.
-void descend(Directories &parent, LengthMap *lengthMap);
-void addToBlockMap(const uintmax_t& fileSize, const fs::path& file, std::shared_ptr<BlockMap> blockMap);
+void descend(Directories &parent, Files &files, LengthMap *lengthMap);
+void addToBlockMap(const uintmax_t fileSize, const fs::path file, std::shared_ptr<BlockMap> blockMap);
 
 // Finds the files with the same lengths in lengthMap and gets the md5 of the
 // first two blocks and saves to blockMap.
 void findDupesByLength(const unsigned int first, const unsigned int last,
-                       const LengthMap * const lengthMap, std::shared_ptr<BlockMap> blockMap);
+                       const LengthMap * const lengthMap, const Files &files, std::shared_ptr<BlockMap> blockMap);
 
 std::string md5sumThreadSafe(char *s, int len);
 void blockMapInsertThreadSafe(std::shared_ptr<BlockMap> blockMap, std::string lengthAndMd5, fs::path file);
