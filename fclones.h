@@ -72,6 +72,7 @@ namespace command_line_options {
   extern bool numbernice;
   extern bool perftest;
   extern std::string starting_directory;
+  extern unsigned int threads;
 }
 
 namespace clo = command_line_options;

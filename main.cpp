@@ -17,7 +17,8 @@ int main(int argc, char *argv[])
     ("isthisthingon,i", "Print file currently being processed.") // ISTHISTHINGON
     ("minbytes,m", po::value<unsigned long long>(), "Minimum size of file to scan in bytes.")
     ("numbernice,n", "Output in fixed format with units.") // NUMBERNICE
-    ("perftest,p", "Output elapsed time for each stage."); // PERFTEST
+    ("perftest,p", "Output elapsed time for each stage.") // PERFTEST
+    ("threads,t", po::value<unsigned int>(), "Number of threads."); 
 
   po::positional_options_description pod;
   pod.add("directory", 1);  
@@ -28,7 +29,7 @@ int main(int argc, char *argv[])
 
     if ( vm.count("help") )
     {
-      std::cerr << "fclones - utility to find duplicate files based on contents." << std::endl
+      std::cout << "fclones - utility to find duplicate files based on contents." << std::endl
                 << desc << std::endl;
       return 1;          
     } 
@@ -74,14 +75,19 @@ int main(int argc, char *argv[])
     if ( vm.count("perftest") )
     {
       clo::perftest = true;              
-    }     
+    }  
+
+    if ( vm.count("threads") )
+    {
+      clo::threads = vm["threads"].as<unsigned int>();
+    } 
 
     po::notify(vm);
 
   }
   catch(po::error &e)
   {
-    std::cerr << "Error while processing command line options: " << e.what() << std::endl << std::endl;
+    std::cerr << "ERROR: Processing command line options: " << e.what() << std::endl << std::endl;
     std::cerr << desc << std::endl;
     return 1;
   }
@@ -118,6 +124,12 @@ int main(int argc, char *argv[])
 
   // hardware_concurrency might return 0 if not defined
   unsigned int num_threads = std::max(std::thread::hardware_concurrency(), 1U);
+
+  if ( clo::threads > 1 && clo::threads <= num_threads)
+  {
+    num_threads = clo::threads;
+  }
+
   // unsigned int num_buckets = lengthMap->bucket_count();
   unsigned int num_files = files.size();
 
@@ -211,7 +223,12 @@ int main(int argc, char *argv[])
     }
     else
     {
-      std::cout << "Stage 3 is not run in fast and loose mode." << std::endl;
+      std::cout << "Stage 3 is not executed in fast and loose mode." << std::endl;
+    }
+    if ( num_threads > 1 )
+    {
+      std::cout << "Multithreading: Used " << num_threads << " out of " << std::max(std::thread::hardware_concurrency(), 1U) 
+                << " maximum possible threads." << std::endl;
     }
   }        
 

@@ -10,6 +10,7 @@ unsigned long long command_line_options::minbytes = 4096;
 bool command_line_options::numbernice = false;
 bool command_line_options::perftest = false;
 std::string command_line_options::starting_directory;
+unsigned int command_line_options::threads = 1;
 
 std::atomic<int> atomic_counter(0);
 
@@ -54,7 +55,7 @@ void descend(Directories &parent, Files &files, LengthMap *lengthMap)
           } 
         }
       } catch (...) {
-        std::cerr << "Directory entry " << ec << " had error code " << ec << " and an exception was caught. Continuing processing." << std::endl;
+        std::cerr << "ERROR: Directory entry " << ec << " had error code " << ec << " and an exception was caught. Continuing processing." << std::endl;
       }
     });	
   }
@@ -112,7 +113,7 @@ std::string addToBlockMap(const uintmax_t fileSize, const fs::path file, std::sh
     }
 
   } catch (...) {
-    std::cerr << "Exception caught in addToBlockMap." << std::endl;
+    std::cerr << "ERROR: Exception caught in addToBlockMap." << std::endl;
     lengthAndMd5 = nullptr;
   }
   return lengthAndMd5;
@@ -190,7 +191,7 @@ void addToMd5Map(std::string lenMd5, fs::path file, std::shared_ptr<Md5Map> md5M
       md5MapInsertThreadSafe(md5Map, md5, file);
     }
   } catch (...) {
-      std::cerr << "Exception caught in addToMd5Map." << std::endl;
+      std::cerr << "ERROR: Exception caught in addToMd5Map." << std::endl;
   }
 }
 
@@ -258,7 +259,7 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
       }
 
     } catch (...) {
-      std::cerr << "Exception caught in createCloneList." << std::endl;
+      std::cerr << "ERROR: Exception caught in createCloneList." << std::endl;
     }
 
   }

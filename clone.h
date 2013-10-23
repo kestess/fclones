@@ -23,9 +23,7 @@ public:
 	std::shared_ptr<std::vector<fs::path>> files;
 	std::string nameList;
 
-	Clone(//unsigned int numClones,
-          //unsigned long long fileSize,
-          std::shared_ptr<std::vector<fs::path>> files);
+	Clone(std::shared_ptr<std::vector<fs::path>> files);
 
     // This is quadratic, but it's your own fault if you are using hard links.
     // Removes the disk space saved and reduces the number of clones to reflect only one inode per file.
