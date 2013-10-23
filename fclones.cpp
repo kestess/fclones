@@ -32,6 +32,7 @@ void descend(Directories &parent, Files &files, LengthMap *lengthMap)
 		{
       if (ec != no_error) {
         std::cerr << "ERROR: Entry " << entry << " resulted in error code: " << ec << "." << std::endl;
+        ec = no_error;
       }
 
       try {
@@ -42,7 +43,7 @@ void descend(Directories &parent, Files &files, LengthMap *lengthMap)
             unsigned long long size = fs::file_size(entry);
             if (size >= clo::minbytes)
             {
-              if (clo::isthisthingon) std::cout << "AL " << entry << std::endl;
+              if (clo::isthisthingon) std::cout << "S1 " << entry << std::endl;
               lengthMap->insert(std::pair<uintmax_t, fs::path>(size, entry));
               files.push_back(std::pair<fs::path, uintmax_t>(entry, size));
             }  
@@ -77,7 +78,7 @@ void blockMapInsertThreadSafe( std::shared_ptr<BlockMap> blockMap, std::string l
   std::lock_guard<std::mutex> guard(block_map_mutex);
   {
     std::lock_guard<std::mutex> log_guard(logging_map_mutex);
-    if (clo::isthisthingon) std::cout << "AB " << file << std::endl;
+    if (clo::isthisthingon) std::cout << "S2 " << file << std::endl;
   }
   blockMap->insert(std::pair<std::string, fs::path>(lengthAndMd5, file)); 
 }
@@ -155,7 +156,7 @@ void md5MapInsertThreadSafe( std::shared_ptr<Md5Map> md5Map, std::string md5, fs
   std::lock_guard<std::mutex> guard(md5_map_mutex);
   {
     std::lock_guard<std::mutex> log_guard(logging_map_mutex);
-    if (clo::isthisthingon) std::cout << "AH " << file << std::endl;
+    if (clo::isthisthingon) std::cout << "S3 " << file << std::endl;
   }
   md5Map->insert(std::pair<std::string, fs::path>(md5, file)); 
 }

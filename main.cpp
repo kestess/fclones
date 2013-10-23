@@ -125,9 +125,8 @@ int main(int argc, char *argv[])
 
   auto hashes = std::make_shared<std::vector<std::string>>(num_files);
 
-  // 10 is a magic constant that should never have to be changed. Famous last words.
   // Prevents from having a range of 0 and starting threads for a trivial task.
-  if (num_threads > num_files/10) num_threads = 1; 
+  if (num_threads > num_files/num_threads) num_threads = 1; 
 
   unsigned int range = num_files/num_threads;
 
@@ -157,11 +156,8 @@ int main(int argc, char *argv[])
   if ( !clo::fastandloose ) {
     start = std::chrono::system_clock::now();
 
-  // 10 is a magic constant that should never have to be changed. Famous last words.
   // Prevents from having a range of 0 and starting threads for a trivial task.
-    if (num_threads > num_files/10) num_threads = 1;
-
-    num_threads = 1; // XXX    
+    if (num_threads > num_files/num_threads) num_threads = 1;  
 
     range = num_files/num_threads;
 
