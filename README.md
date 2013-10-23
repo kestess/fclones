@@ -247,6 +247,11 @@ Stage 2 completed in 530.29 seconds. Inserted 31401 entries.
 Stage 3 completed in 51.57 seconds. Inserted 17500 entries.
 
 In short, threading doesn't really help or hurt on my mini mac. Sad.
+...Until I ordered the reads...
 
+
+void findDupesByLengthAndBlocks(const unsigned int first, const unsigned int last,
+                                std::shared_ptr<BlockMap> blockMap, const Files &files,
+                                std::vector<std::string> hashes, std::shared_ptr<Md5Map> md5Map);
 
 

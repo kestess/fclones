@@ -88,7 +88,6 @@ int main(int argc, char *argv[])
 
   Directories dirs;
 
-  // auto lengthMap = std::make_shared<LengthMap>();
   LengthMap *lengthMap = new LengthMap();
   auto blockMap  = std::make_shared<BlockMap>();
   auto md5Map    = std::make_shared<Md5Map>();
@@ -110,13 +109,6 @@ int main(int argc, char *argv[])
   start = std::chrono::system_clock::now();
   descend(dirs, files, lengthMap); // creates the length Hash of all the files.
 
-/*
-  for (auto file : files)
-  {
-    std::cout << file.first << "    " << file.second << std::endl;
-  }
-*/
-
   end = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed_seconds_1 = end - start;
   unsigned int lengthMapSize = lengthMap->size();
@@ -124,12 +116,14 @@ int main(int argc, char *argv[])
   if ( clo::isthisthingon || clo::perftest ) std::cout << "Stage 1 of 3 (L): Inserted "
     << lengthMapSize << " entries in " << elapsed_seconds_1.count() << " seconds." << std::endl;
 
-  start = std::chrono::system_clock::now();
-
   // hardware_concurrency might return 0 if not defined
   unsigned int num_threads = std::max(std::thread::hardware_concurrency(), 1U);
   // unsigned int num_buckets = lengthMap->bucket_count();
   unsigned int num_files = files.size();
+
+  start = std::chrono::system_clock::now();
+
+  auto hashes = std::make_shared<std::vector<std::string>>(num_files);
 
   // 10 is a magic constant that should never have to be changed. Famous last words.
   // Prevents from having a range of 0 and starting threads for a trivial task.
@@ -141,10 +135,10 @@ int main(int argc, char *argv[])
 
   for ( unsigned int i = 0; i < (num_threads - 1); ++i )
   { 
-    threads[i] = std::thread(findDupesByLength, i * range, i * range + range, lengthMap, files, blockMap); 
+    threads[i] = std::thread(findDupesByLength, i * range, i * range + range, lengthMap, files, hashes, blockMap); 
   }
 
-  findDupesByLength( (num_threads - 1) * range, num_files, lengthMap, files, blockMap);
+  findDupesByLength( (num_threads - 1) * range, num_files, lengthMap, files, hashes, blockMap);
 
   if (num_threads > 1)
   {
@@ -159,32 +153,24 @@ int main(int argc, char *argv[])
   if ( clo::isthisthingon || clo::perftest  ) std::cout << "Stage 2 of 3 (B): Inserted "
     << blockMap->size() << " entries in " << elapsed_seconds_2.count() << " seconds." << std::endl;
 
-/*
-  for (auto bucket = blockMap->begin(); bucket != blockMap->end(); ++bucket)
-  {
-    std::cout << bucket->first << ":" << bucket->second << std::endl;
-  }
-*/
-  //std::cout << "Blockmap size is " << blockMap->size() << std::endl;
-
   std::chrono::duration<double> elapsed_seconds_3;
   if ( !clo::fastandloose ) {
     start = std::chrono::system_clock::now();
 
-    unsigned int num_buckets = blockMap->bucket_count();
-
   // 10 is a magic constant that should never have to be changed. Famous last words.
   // Prevents from having a range of 0 and starting threads for a trivial task.
-    if (num_threads > num_buckets/10) num_threads = 1;    
+    if (num_threads > num_files/10) num_threads = 1;
 
-    range = num_buckets/num_threads;
+    num_threads = 1; // XXX    
+
+    range = num_files/num_threads;
 
     for ( unsigned int i = 0; i < (num_threads - 1); ++i )
     { 
-      threads[i] = std::thread(findDupesByLengthAndBlocks, i * range, i * range + range, blockMap, md5Map); 
+      threads[i] = std::thread(findDupesByLengthAndBlocks, i * range, i * range + range, blockMap, files, hashes, md5Map); 
     }
 
-    findDupesByLengthAndBlocks( (num_threads - 1) * range, num_buckets, blockMap, md5Map);
+    findDupesByLengthAndBlocks( (num_threads - 1) * range, num_files, blockMap, files, hashes, md5Map);
 
     if (num_threads > 1)
     {
@@ -196,13 +182,6 @@ int main(int argc, char *argv[])
     if ( clo::isthisthingon || clo::perftest ) std::cout << "Stage 3 of 3 (H): Inserted " 
       << md5Map->size() << " entries in " << elapsed_seconds_3.count() << " seconds." << std::endl;
   }
-
-/*
-  for (auto bucket = md5Map->begin(); bucket != md5Map->end(); ++bucket)
-  {
-    std::cout << "MD5 " << bucket->first << ":" << bucket->second << std::endl;
-  }
-*/
 
   auto clones = createCloneList(( clo::fastandloose ) ? blockMap : md5Map);
   std::sort(clones->begin(), clones->end());

@@ -16,9 +16,6 @@ std::atomic<int> atomic_counter(0);
 // Add directories to working directory list
 void descend(Directories &parent, Files &files, LengthMap *lengthMap)
 {
-  // XXX not currently used
-  static int counter = 0;
-  counter++;
 
   boost::system::error_code ec, no_error;
   Directories dirs;
@@ -73,16 +70,22 @@ std::string md5sumThreadSafe(char *s, int len)
   return md5; 
 }
 
+std::mutex logging_map_mutex;
+
 void blockMapInsertThreadSafe( std::shared_ptr<BlockMap> blockMap, std::string lengthAndMd5, fs::path file)
 {
   std::lock_guard<std::mutex> guard(block_map_mutex);
-  if (clo::isthisthingon) std::cout << "AB " << file << std::endl;
+  {
+    std::lock_guard<std::mutex> log_guard(logging_map_mutex);
+    if (clo::isthisthingon) std::cout << "AB " << file << std::endl;
+  }
   blockMap->insert(std::pair<std::string, fs::path>(lengthAndMd5, file)); 
 }
 
-void addToBlockMap(const uintmax_t fileSize, const fs::path file, std::shared_ptr<BlockMap> blockMap)
+std::string addToBlockMap(const uintmax_t fileSize, const fs::path file, std::shared_ptr<BlockMap> blockMap)
 {
 
+  std::string lengthAndMd5; 
   try {
     std::ifstream f (fs::canonical(file).string(), std::ios::in | std::ios::binary);
     std::string checksum;
@@ -102,31 +105,31 @@ void addToBlockMap(const uintmax_t fileSize, const fs::path file, std::shared_pt
       checksum = md5sumThreadSafe(block, len);
       delete[] block;
 
-      std::string lengthAndMd5 = std::to_string(fileSize) + "_" + checksum;
+      lengthAndMd5 = std::to_string(fileSize) + "_" + checksum;
       blockMapInsertThreadSafe(blockMap, lengthAndMd5, file);
       f.close();
     }
 
   } catch (...) {
     std::cerr << "Exception caught in addToBlockMap." << std::endl;
+    lengthAndMd5 = nullptr;
   }
+  return lengthAndMd5;
 }
 
-std::mutex logging_map_mutex;
-
-void loggingLengthThreadSafe(const LengthMap * const lengthMap)
+void loggingLengthThreadSafe(const unsigned int size)
 {
   std::lock_guard<std::mutex> guard(logging_map_mutex);
       std::cout << "Stage 2 of 3 is " << std::setprecision(1) << std::fixed
-                << static_cast<float>(atomic_counter)/lengthMap->bucket_count() * 100 << "% done." << std::endl;
+                << static_cast<float>(atomic_counter)/size * 100 << "% done." << std::endl;
 
 }
 
 void findDupesByLength(const unsigned int first, const unsigned int last,
-                       const LengthMap * const lengthMap, const Files &files, std::shared_ptr<BlockMap> blockMap)
+                       const LengthMap * const lengthMap, const Files &files,
+                       Hashes hashes, std::shared_ptr<BlockMap> blockMap)
 {
 
-  //for (auto file : files)
   for ( unsigned int i = first; i < last; ++i )
   {
     atomic_counter++;
@@ -134,42 +137,15 @@ void findDupesByLength(const unsigned int first, const unsigned int last,
 
     if (clo::arewethereyet && (atomic_counter % globals::BUCKET_INCREMENT == 0) )
     {
-      loggingLengthThreadSafe(lengthMap); 
+      loggingLengthThreadSafe(files.size()); 
     }
 
     if ( lengthMap->count(files[i].second) > 1 )
     {
-      addToBlockMap(files[i].second, files[i].first, blockMap);  
+      hashes->at(i) = addToBlockMap(files[i].second, files[i].first, blockMap); 
     }
   }
-
-
-/*
-  unsigned int bucket = first;
-  unsigned int bucket_last = bucket;
-
-  for (bucket = first; bucket < last; ++bucket) 
-  {
-    atomic_counter++;
-    if (clo::arewethereyet && bucket != bucket_last && (bucket % globals::BUCKET_INCREMENT == 0) )
-    {
-      loggingLengthThreadSafe(lengthMap);
-      bucket_last = bucket;
-    }
-
-    // Same size files go into the same buckets and the bucket is shared with other lengths
-    if ( lengthMap->bucket_size(bucket) < 2 ) continue;
-    for ( auto it = lengthMap->begin(bucket); it != lengthMap->end(bucket); ++it )
-    {
-      if ( lengthMap->count(it->first) > 1 )
-      {
-        addToBlockMap(it->first, it->second, blockMap);   
-      }
-    } 
-
-  }
-
-*/  
+ 
 }
 
 std::mutex md5_map_mutex;
@@ -177,12 +153,15 @@ std::mutex md5_map_mutex;
 void md5MapInsertThreadSafe( std::shared_ptr<Md5Map> md5Map, std::string md5, fs::path file)
 {
   std::lock_guard<std::mutex> guard(md5_map_mutex);
-  if (clo::isthisthingon) std::cout << "AH " << file << std::endl;
+  {
+    std::lock_guard<std::mutex> log_guard(logging_map_mutex);
+    if (clo::isthisthingon) std::cout << "AH " << file << std::endl;
+  }
   md5Map->insert(std::pair<std::string, fs::path>(md5, file)); 
 }
 
 // Now for the md5 of the whole file
-void addToMd5Map(std::string lenMd5, fs::path& file, std::shared_ptr<Md5Map> md5Map)
+void addToMd5Map(std::string lenMd5, fs::path file, std::shared_ptr<Md5Map> md5Map)
 {
   try {
     std::ifstream f (fs::canonical(file).string(), std::ios::in | std::ios::binary);
@@ -214,41 +193,35 @@ void addToMd5Map(std::string lenMd5, fs::path& file, std::shared_ptr<Md5Map> md5
   }
 }
 
-void loggingBlocksThreadSafe(const std::shared_ptr<BlockMap> blockMap)
+void loggingBlocksThreadSafe(const unsigned int size)
 {
   std::lock_guard<std::mutex> guard(logging_map_mutex);
       std::cout << "Stage 3 of 3 is " << std::setprecision(1) << std::fixed
-                << static_cast<float>(atomic_counter)/blockMap->bucket_count() * 100 << "% done." << std::endl;
-
+                << static_cast<float>(atomic_counter)/size * 100 << "% done." << std::endl;
 }
 
 void findDupesByLengthAndBlocks(const unsigned int first, const unsigned int last,
-                                std::shared_ptr<BlockMap> blockMap, std::shared_ptr<Md5Map> md5Map)
+                                std::shared_ptr<BlockMap> blockMap, const Files &files,
+                                Hashes hashes, std::shared_ptr<Md5Map> md5Map)
 {
-  unsigned int bucket = first;
-  unsigned int bucket_last = bucket;
 
   atomic_counter = 0;
 
-  for (bucket = first; bucket < last; ++bucket) 
+  for ( unsigned int i = first; i < last; ++i )
   {
     atomic_counter++;
-    if ( clo::arewethereyet && bucket != bucket_last && (bucket % globals::BUCKET_INCREMENT == 0) )
+
+    if (clo::arewethereyet && (atomic_counter % globals::BUCKET_INCREMENT == 0) )
     {
-        loggingBlocksThreadSafe(blockMap);
-        bucket_last = bucket;                   
+      loggingBlocksThreadSafe(files.size()); 
     }
 
-    if ( blockMap->bucket_size(bucket) < 2 ) continue;
-    for ( auto it = blockMap->begin(bucket); it != blockMap->end(bucket); ++it )
+    if ( blockMap->count(hashes->at(i)) > 1 )
     {
-      if ( blockMap->count(it->first) > 1 )
-      {
-        addToMd5Map(it->first, it->second, md5Map);
-      }
+      addToMd5Map(hashes->at(i), files[i].first, md5Map); 
     }
-
   }
+
 }
 
 std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
@@ -273,23 +246,14 @@ std::shared_ptr<CloneList> createCloneList(std::shared_ptr<Md5Map> md5Map)
       // hash has not been found already
       if (alreadyDone == savedResults.end())
       {
-        //std::string names;
         std::shared_ptr<std::vector<fs::path>> files = std::make_shared<std::vector<fs::path>>();
         for ( auto it = copies.first; it != copies.second; ++it )
         {
-          // names += fs::canonical(it->second).string() + ";";
           files->push_back(it->second);
         }
-        //if (names.length() > 0) names.pop_back(); // remove trailing semicolon
-        //std::cout << "First time for  " << hash << std::endl;   
-        // unsigned long long filesize = fs::file_size(bucket->second);
         Clone clone(files);
         savedResults.insert(hash);
         clones->push_back(clone);
-      }
-      else
-      {
-        //std::cout << "Found hash " << hash << " already."  << std::endl;
       }
 
     } catch (...) {
