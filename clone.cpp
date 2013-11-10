@@ -12,14 +12,15 @@ Clone::Clone(std::shared_ptr<std::vector<fs::path>> files)
 
 // HARDLINKY
 // Only counts the files with unique inodes. Adjust numClones and diskSpaceSaved accordingly.
+// All file names will still be printed to resolve manually or by another script - for now.
 void Clone::adjustHardLinks()
 {
   // We've already visited this file.
-  bool *already_counted = new bool[numClones](); // zero init
-
+  bool *already_counted = new bool[numClones](); // false init
+  std::stringstream ss;
   for ( auto file = files->begin(); file != files->end(); ++file )
   {
-    nameList += fs::canonical(*file).string() + ";";
+    ss << fs::canonical(*file) << ";";
     if ( fs::hard_link_count(*file) > 1 )
     {
       // Just because it is hard-linked doesn't mean both links exist in the directory tree that was searched.
@@ -36,8 +37,8 @@ void Clone::adjustHardLinks()
       }
     }
   } 
-
   delete[] already_counted;
+  nameList = ss.str();
   if (nameList.length() > 0) nameList.pop_back(); 
 }
 
